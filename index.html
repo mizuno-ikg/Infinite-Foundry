@@ -4,67 +4,65 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b0f12" />
-  <title>Infinite Foundry — Workshop Prototype</title>
+  <title>Infinite Foundry — Workshop Cycle</title>
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    .brand-badges{display:flex;gap:5px;margin-top:5px}.brand-badges span{font-size:8px;letter-spacing:.12em;border:1px solid #39474f;padding:3px 5px;color:#92a1a9}.modules{min-height:150px}.module-slot{border:1px dashed #344149;background:#0b1013;padding:9px;margin-top:8px}.module-slot span{display:block;color:#61717a;font-size:8px;letter-spacing:.14em}.module-slot strong{display:block;font-size:11px;margin:2px 0}.module-slot small{color:var(--muted);font-size:9px}.module-slot.filled{border-style:solid;border-color:#45606a;background:linear-gradient(90deg,rgba(104,216,232,.06),#0b1013)}.module-slot.filled span{color:var(--cyan)}.milestone-row.miss i{border-color:#704242;color:var(--danger)}
+    .prestige{margin-top:14px;padding:20px;display:grid;grid-template-columns:280px 1fr auto;gap:18px;align-items:stretch;border-color:#63422b;background:linear-gradient(120deg,rgba(80,40,20,.28),rgba(14,20,23,.98) 45%)}.prestige[hidden]{display:none}.prestige h2{margin:6px 0;font-size:24px;letter-spacing:.05em}.prestige h2.fail{color:var(--danger)}.prestige h2.win{color:var(--good)}.prestige p{color:#a7b3b9;font-size:12px;line-height:1.5}.prestige-stats{display:flex;gap:8px}.prestige-stats div{border:1px solid #3f4c52;background:#0b1013;padding:8px 12px;min-width:100px}.prestige-stats span{display:block;font-size:8px;color:var(--muted)}.prestige-stats strong{font-size:18px;color:var(--amber)}.prestige-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.prestige-grid button{position:relative;text-align:left;border:1px solid #405058;background:#10181c;color:var(--text);padding:10px 54px 10px 10px;cursor:pointer}.prestige-grid button:disabled{opacity:.42;cursor:not-allowed}.prestige-grid span{display:block;font-size:10px;font-weight:900;letter-spacing:.08em}.prestige-grid small{display:block;color:var(--muted);margin-top:2px}.prestige-grid b,.prestige-grid em{position:absolute;right:8px;font-style:normal;font-size:9px}.prestige-grid b{top:9px;color:var(--cyan)}.prestige-grid em{bottom:9px;color:var(--amber)}.restart{border:1px solid #8a5d31;background:linear-gradient(180deg,#563719,#2c1e10);color:#ffe0b9;padding:12px;font-weight:900;letter-spacing:.08em;cursor:pointer;min-width:190px}.status.failed{color:var(--danger)}.save-tools{display:flex;gap:5px;align-items:center}.save-tools button{background:#11181c;border:1px solid #344149;color:#76868f;font-size:8px;padding:3px 6px;cursor:pointer}.save-tools b{font-weight:500;color:#62737c}@media(max-width:980px){.prestige{grid-template-columns:1fr}.restart{min-height:52px}.side .modules{grid-column:1/-1}}@media(max-width:620px){.brand-badges{display:none}.prestige{padding:12px;gap:12px}.prestige-grid{grid-template-columns:1fr}.prestige h2{font-size:20px}.save-tools{margin-top:4px}}
+  </style>
 </head>
 <body>
   <div class="shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">IF</span><div><strong>INFINITE FOUNDRY</strong><small>WORKSHOP // DIRECTIVE 001</small></div></div>
+      <div class="brand"><span class="brand-mark">IF</span><div><strong>INFINITE FOUNDRY</strong><small>WORKSHOP // DIRECTIVE 001</small><div class="brand-badges"><span id="cycleBadge">CYCLE 01</span><span id="bpBadge">BP 0</span></div></div></div>
       <div class="topstats">
         <div><span>THROUGHPUT</span><strong id="throughput">1.00</strong><em>/s</em></div>
         <div><span>CREDITS</span><strong id="credits">20.0</strong></div>
         <div><span>TIME</span><strong id="clock">05:00</strong></div>
       </div>
-      <div class="speed" aria-label="Game speed">
-        <button data-speed="1" class="active">×1</button><button data-speed="2">×2</button><button data-speed="4">×4</button>
-      </div>
+      <div class="speed" aria-label="Game speed"><button data-speed="1" class="active">×1</button><button data-speed="2">×2</button><button data-speed="4">×4</button></div>
     </header>
 
     <main class="layout">
       <section class="factory-card panel">
-        <div class="factory-head">
-          <div><span class="eyebrow">LIVE FACTORY VIEW</span><h1>Foundry-01 / Ember Bay</h1></div>
-          <div class="status"><i></i><span>ONLINE</span></div>
-        </div>
-
-        <div class="directive">
-          <div class="directive-copy"><span>FINAL DIRECTIVE</span><strong>52.0 /s sustained</strong><small>Maintain target during final evaluation window.</small></div>
-          <div class="meter"><div id="directiveFill"></div><span id="directivePct">2%</span></div>
-        </div>
-
+        <div class="factory-head"><div><span class="eyebrow">LIVE FACTORY VIEW</span><h1>Foundry-01 / Ember Bay</h1></div><div class="status"><i></i><span>ONLINE</span></div></div>
+        <div class="directive"><div class="directive-copy"><span>FINAL DIRECTIVE</span><strong>52.0 /s sustained</strong><small>Maintain target during final evaluation window.</small></div><div class="meter"><div id="directiveFill"></div><span id="directivePct">2%</span></div></div>
         <div class="factory-scene" id="factoryScene">
-          <div class="haze"></div><div class="grid"></div>
-          <div class="chimney c1"><i></i></div><div class="chimney c2"><i></i></div>
-          <div class="pipe p1"></div><div class="pipe p2"></div>
+          <div class="haze"></div><div class="grid"></div><div class="chimney c1"><i></i></div><div class="chimney c2"><i></i></div><div class="pipe p1"></div><div class="pipe p2"></div>
           <div class="line" aria-label="Production line">
-            <button class="machine source" data-id="source"><span class="machine-icon">⛏</span><b>SOURCE</b><small>Ore intake</small><strong>1.00</strong><em>LV 0</em></button>
-            <div class="belt"><i></i><i></i><i></i></div>
-            <button class="machine process" data-id="process"><span class="machine-icon">♨</span><b>PROCESS</b><small>Arc furnace</small><strong>1.00</strong><em>LV 0</em></button>
-            <div class="belt"><i></i><i></i><i></i></div>
-            <button class="machine transfer" data-id="transfer"><span class="machine-icon">⇢</span><b>TRANSFER</b><small>Conveyor</small><strong>1.00</strong><em>LV 0</em></button>
-            <div class="belt"><i></i><i></i><i></i></div>
+            <button class="machine source" data-id="source"><span class="machine-icon">⛏</span><b>SOURCE</b><small>Ore intake</small><strong>1.00</strong><em>LV 0</em></button><div class="belt"><i></i><i></i><i></i></div>
+            <button class="machine process" data-id="process"><span class="machine-icon">♨</span><b>PROCESS</b><small>Arc furnace</small><strong>1.00</strong><em>LV 0</em></button><div class="belt"><i></i><i></i><i></i></div>
+            <button class="machine transfer" data-id="transfer"><span class="machine-icon">⇢</span><b>TRANSFER</b><small>Conveyor</small><strong>1.00</strong><em>LV 0</em></button><div class="belt"><i></i><i></i><i></i></div>
             <button class="machine assembly" data-id="assembly"><span class="machine-icon">⚙</span><b>ASSEMBLY</b><small>Press line</small><strong>1.00</strong><em>LV 0</em></button>
           </div>
           <button class="power machine" data-id="power"><span class="machine-icon">ϟ</span><b>POWER</b><small>Turbine bank</small><strong>6.00</strong><em>LV 0</em></button>
           <div class="factory-label"><span>BOTTLENECK</span><strong id="bottleneckLabel">SOURCE // 1.00/s</strong></div>
         </div>
-
-        <div class="factory-footer">
-          <button id="overclock" class="overclock"><span>OVERCLOCK PULSE</span><strong>READY</strong><small>Boost current bottleneck +30% for 4s</small></button>
-          <div class="module-feed"><span>RECOVERED MODULE</span><strong id="moduleName">No module recovered</strong><small id="moduleEffect">Automatic recovery. Production never pauses.</small></div>
-        </div>
+        <div class="factory-footer"><button id="overclock" class="overclock"><span>OVERCLOCK PULSE</span><strong>READY</strong><small>Boost current bottleneck +30% for 4s</small></button><div class="module-feed"><span>RECOVERED MODULE</span><strong id="moduleName">No module recovered</strong><small id="moduleEffect">Automatic recovery. Production never pauses.</small></div></div>
       </section>
 
       <aside class="side panel">
         <section class="milestones"><span class="eyebrow">DIRECTIVE TRACK</span><div id="milestoneList"></div></section>
         <section class="upgrade"><span class="eyebrow">BOTTLENECK CONTROL</span><h2 id="selectedName">SOURCE</h2><p id="selectedDesc">Ore intake capacity. The slowest stage limits the entire line.</p><div class="upgrade-stats"><div><span>CAPACITY</span><strong id="selectedCap">1.00/s</strong></div><div><span>NEXT COST</span><strong id="selectedCost">8.0</strong></div></div><button id="upgradeBtn">UPGRADE STAGE</button><small>Tip: highlighted machinery is constraining throughput.</small></section>
+        <section class="modules"><span class="eyebrow">MODULE BAYS</span><div id="moduleSlots"></div></section>
         <section class="log"><span class="eyebrow">SYSTEM LOG</span><div id="logLines"></div></section>
       </aside>
     </main>
 
-    <footer><span>WORKSHOP PROTOTYPE // visual UX milestone</span><span>Hidden tab = simulation paused. No offline progress.</span></footer>
+    <section id="prestigePanel" class="prestige panel" hidden>
+      <div class="prestige-copy"><span class="eyebrow">SALVAGE / RETAIN / REBUILD</span><h2 id="resultTitle">DIRECTIVE FAILED</h2><p id="resultSummary"></p><div class="prestige-stats"><div><span>BLUEPRINTS</span><strong id="blueprints">0</strong></div><div><span>NEXT CYCLE</span><strong id="cycleNo">2</strong></div></div></div>
+      <div class="prestige-grid">
+        <button data-meta-upgrade="efficiency"><span>CORE EFFICIENCY</span><small>All stage capacity +8% / level</small><b>LV 0</b><em>8 BP</em></button>
+        <button data-meta-upgrade="capital"><span>STARTING CAPITAL</span><small>Begin each cycle with +8 credits / level</small><b>LV 0</b><em>6 BP</em></button>
+        <button data-meta-upgrade="automation"><span>AUTOMATION MEMORY</span><small>Retains automation tier for later eras</small><b>LV 0</b><em>10 BP</em></button>
+        <button data-meta-upgrade="moduleBay"><span>MODULE BAY</span><small>Add one retained auto-equip slot</small><b>LV 0</b><em>14 BP</em></button>
+      </div>
+      <button id="restartBtn" class="restart">DISMANTLE &amp; BEGIN NEXT CYCLE</button>
+    </section>
+
+    <footer><span>WORKSHOP FOUNDATION // deterministic simulation</span><span>Hidden tab = paused. No offline progress.</span><span class="save-tools"><button id="manualSave">SAVE</button><button id="resetSave">RESET</button><b id="saveState">AUTO-SAVE</b></span></footer>
   </div>
+  <script src="engine.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
