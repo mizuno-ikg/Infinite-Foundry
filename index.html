@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0f12" />
+  <title>Infinite Foundry — Workshop Prototype</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">IF</span><div><strong>INFINITE FOUNDRY</strong><small>WORKSHOP // DIRECTIVE 001</small></div></div>
+      <div class="topstats">
+        <div><span>THROUGHPUT</span><strong id="throughput">1.00</strong><em>/s</em></div>
+        <div><span>CREDITS</span><strong id="credits">20.0</strong></div>
+        <div><span>TIME</span><strong id="clock">05:00</strong></div>
+      </div>
+      <div class="speed" aria-label="Game speed">
+        <button data-speed="1" class="active">×1</button><button data-speed="2">×2</button><button data-speed="4">×4</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="factory-card panel">
+        <div class="factory-head">
+          <div><span class="eyebrow">LIVE FACTORY VIEW</span><h1>Foundry-01 / Ember Bay</h1></div>
+          <div class="status"><i></i><span>ONLINE</span></div>
+        </div>
+
+        <div class="directive">
+          <div class="directive-copy"><span>FINAL DIRECTIVE</span><strong>52.0 /s sustained</strong><small>Maintain target during final evaluation window.</small></div>
+          <div class="meter"><div id="directiveFill"></div><span id="directivePct">2%</span></div>
+        </div>
+
+        <div class="factory-scene" id="factoryScene">
+          <div class="haze"></div><div class="grid"></div>
+          <div class="chimney c1"><i></i></div><div class="chimney c2"><i></i></div>
+          <div class="pipe p1"></div><div class="pipe p2"></div>
+          <div class="line" aria-label="Production line">
+            <button class="machine source" data-id="source"><span class="machine-icon">⛏</span><b>SOURCE</b><small>Ore intake</small><strong>1.00</strong><em>LV 0</em></button>
+            <div class="belt"><i></i><i></i><i></i></div>
+            <button class="machine process" data-id="process"><span class="machine-icon">♨</span><b>PROCESS</b><small>Arc furnace</small><strong>1.00</strong><em>LV 0</em></button>
+            <div class="belt"><i></i><i></i><i></i></div>
+            <button class="machine transfer" data-id="transfer"><span class="machine-icon">⇢</span><b>TRANSFER</b><small>Conveyor</small><strong>1.00</strong><em>LV 0</em></button>
+            <div class="belt"><i></i><i></i><i></i></div>
+            <button class="machine assembly" data-id="assembly"><span class="machine-icon">⚙</span><b>ASSEMBLY</b><small>Press line</small><strong>1.00</strong><em>LV 0</em></button>
+          </div>
+          <button class="power machine" data-id="power"><span class="machine-icon">ϟ</span><b>POWER</b><small>Turbine bank</small><strong>6.00</strong><em>LV 0</em></button>
+          <div class="factory-label"><span>BOTTLENECK</span><strong id="bottleneckLabel">SOURCE // 1.00/s</strong></div>
+        </div>
+
+        <div class="factory-footer">
+          <button id="overclock" class="overclock"><span>OVERCLOCK PULSE</span><strong>READY</strong><small>Boost current bottleneck +30% for 4s</small></button>
+          <div class="module-feed"><span>RECOVERED MODULE</span><strong id="moduleName">No module recovered</strong><small id="moduleEffect">Automatic recovery. Production never pauses.</small></div>
+        </div>
+      </section>
+
+      <aside class="side panel">
+        <section class="milestones"><span class="eyebrow">DIRECTIVE TRACK</span><div id="milestoneList"></div></section>
+        <section class="upgrade"><span class="eyebrow">BOTTLENECK CONTROL</span><h2 id="selectedName">SOURCE</h2><p id="selectedDesc">Ore intake capacity. The slowest stage limits the entire line.</p><div class="upgrade-stats"><div><span>CAPACITY</span><strong id="selectedCap">1.00/s</strong></div><div><span>NEXT COST</span><strong id="selectedCost">8.0</strong></div></div><button id="upgradeBtn">UPGRADE STAGE</button><small>Tip: highlighted machinery is constraining throughput.</small></section>
+        <section class="log"><span class="eyebrow">SYSTEM LOG</span><div id="logLines"></div></section>
+      </aside>
+    </main>
+
+    <footer><span>WORKSHOP PROTOTYPE // visual UX milestone</span><span>Hidden tab = simulation paused. No offline progress.</span></footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
