@@ -26,6 +26,7 @@ COST_GROWTH = 1.18
 CAPACITY_GROWTH = 1.11
 STARTING_CREDITS = 20.0
 FINAL_TARGET = 35.0
+FINAL_GAME_TIME = 300.0
 CHECKPOINTS = (75.0, 150.0, 225.0, 300.0)
 
 
@@ -35,6 +36,7 @@ class RunResult:
     final_throughput: float
     levels: Dict[str, int]
     credits: float
+    elapsed_game_time: float
 
 
 def upgrade_cost(stage: str, level: int) -> float:
@@ -68,8 +70,8 @@ def simulate(
 ) -> RunResult:
     """Run a greedy bottleneck-aware player model.
 
-    `speed` changes game-seconds per real-second. To compare x1/x2/x4 fairly,
-    call with real_seconds scaled so total game-time remains 300 seconds.
+    `speed` changes game-seconds per real-second. Speed-invariance is checked by
+    scaling real_seconds so each run receives the same 300 game-seconds.
     Random module effects are intentionally excluded from this baseline: a bad
     roll must never be required for solvability.
     """
@@ -77,11 +79,12 @@ def simulate(
     levels = {stage: 0 for stage in STAGES}
     credits = STARTING_CREDITS
     game_time = 0.0
+    end_game_time = min(FINAL_GAME_TIME, real_seconds * speed)
     checkpoints: Dict[float, float] = {}
-    pending = list(CHECKPOINTS)
+    pending = [point for point in CHECKPOINTS if point <= end_game_time + 1e-9]
 
-    while game_time < 300.0 - 1e-9:
-        game_dt = min(real_dt * speed, 300.0 - game_time)
+    while game_time < end_game_time - 1e-9:
+        game_dt = min(real_dt * speed, end_game_time - game_time)
         throughput = effective_throughput(levels, permanent_multiplier)
         credits += throughput * active_income_multiplier * game_dt
         game_time += game_dt
@@ -107,6 +110,7 @@ def simulate(
         final_throughput=effective_throughput(levels, permanent_multiplier),
         levels=levels,
         credits=credits,
+        elapsed_game_time=game_time,
     )
 
 
@@ -124,8 +128,8 @@ def print_reference_cases() -> None:
 
     print("speed invariance")
     for speed in (1.0, 2.0, 4.0):
-        result = simulate(real_seconds=300.0 / speed, speed=speed)
-        print(speed, result.final_throughput, result.levels)
+        result = simulate(real_seconds=FINAL_GAME_TIME / speed, speed=speed)
+        print(speed, result.elapsed_game_time, result.final_throughput, result.levels)
 
 
 if __name__ == "__main__":
