@@ -19,7 +19,7 @@
   function moduleMultiplier(state,id){return state.cycle.modules.reduce((mult,x)=>x.target===id?mult*x.mult:mult,1)}
   function growthSeries(growth,levels){return levels<=0?1:(Math.pow(growth,levels)-1)/(growth-1)+1}
   function stageCapacityNoModule(state,id){let d=STAGE_DEFS[id],e=upgradeEffects(state.meta);return d.base*growthSeries(d.growth,state.cycle.levels[id])*e.capacity}
-  function rawBottleneck(state){let best='source',v=Infinity;for(let id of Object.keys(STAGE_DEFS)){let c=stageCapacityNoModule(state,id);if(c<v-1e-9){v=c;best=id}}return best}
+  function rawBottleneck(state){let best='source',v=Infinity;for(let id of Object.keys(STAGE_DEFS)){let c=stageCapacityNoModule(state,id)*moduleMultiplier(state,id);if(c<v-1e-9){v=c;best=id}}return best}
   function stageCapacity(state,id,includeOverclock=true){let v=stageCapacityNoModule(state,id)*moduleMultiplier(state,id);if(includeOverclock&&id===rawBottleneck(state)&&state.cycle.time<state.cycle.overclockUntil)v*=1.3;return v}
   function throughput(state){return Math.min(...Object.keys(STAGE_DEFS).map(id=>stageCapacity(state,id,true)))}
   function cost(state,id){let d=STAGE_DEFS[id];return d.cost*Math.pow(d.costGrowth,state.cycle.levels[id])}
