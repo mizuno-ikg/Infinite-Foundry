@@ -1,0 +1,16 @@
+'use strict';
+const assert=require('assert'),fs=require('fs');
+const hold=fs.readFileSync('playfeel-round4.js','utf8');
+const loader=fs.readFileSync('playfeel-round5.js','utf8');
+const js=fs.readFileSync('playfeel-round8.js','utf8');
+const css=fs.readFileSync('playfeel-round8.css','utf8');
+assert(hold.includes('activeStops')&&hold.includes('cancelAllHolds'),'hold-to-upgrade must expose one cancellation path for every active repeat loop');
+assert(hold.includes("document.addEventListener('visibilitychange'")&&hold.includes("window.addEventListener('blur'")&&hold.includes("window.addEventListener('pagehide'"),'hold-to-upgrade must stop on visibility/focus lifecycle changes');
+assert(hold.includes('btn.disabled||document.hidden'),'repeat purchase must refuse to spend while the document is hidden');
+assert(loader.includes("'playfeel-round8.css'")&&loader.includes("round8.src='playfeel-round8.js'"),'Round 8 interaction hardening must be loaded by the playfeel chain');
+assert(js.includes('topOpenOverlay')&&js.includes("e.key!=='Tab'"),'Round 8 must keep keyboard focus inside the active modal');
+assert(js.includes("triggers:['statusBtn','moduleFeed','resultStatusBtn']"),'STATUS focus restoration must remember every player-visible launcher');
+assert(js.includes("if(name==='era'){focusFactoryControl();return}"),'Era briefing must return keyboard focus to live factory controls');
+assert(js.includes("setAttribute('aria-live','polite')"),'dynamic delegated-control/status feedback must be exposed politely to assistive tech');
+assert(css.includes(':focus-visible')&&css.includes('.machine-upgrade.impact:focus-visible'),'direct controls and high-value upgrades must have explicit keyboard focus treatment');
+console.log('playfeel round8 contract tests passed');
