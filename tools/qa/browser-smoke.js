@@ -40,6 +40,12 @@ async function main(){
       execFileSync(chrome,[...chromeArgs(`${flowBase}-shot`,viewport.width,viewport.height,flowUrl,6000),`--screenshot=${flowScreenshot}`],{timeout:30000,stdio:'ignore'});
       assert(fs.existsSync(flowScreenshot)&&fs.statSync(flowScreenshot).size>10000,`${viewport.name}: interaction screenshot missing/empty`);
       report.push({kind:'interaction',viewport:viewport.name,prestige:true,patent:true,blueprint:true,ascendEra:2,speed:4,upgrade:true,reload:true,screenshot:path.basename(flowScreenshot)});
+
+      const corruptUrl='http://127.0.0.1:4173/tools/qa/browser-corrupt-save.html';
+      const corruptBase=`/tmp/if-corrupt-${process.pid}-${viewport.name}`;
+      const corruptDom=execFileSync(chrome,[...chromeArgs(corruptBase,viewport.width,viewport.height,corruptUrl,5000),'--dump-dom'],{encoding:'utf8',timeout:30000,stdio:['ignore','pipe','ignore']});
+      assert(corruptDom.includes('data-qa-corrupt="pass"'),`${viewport.name}: corrupt save recovery failed`);
+      report.push({kind:'corrupt-save',viewport:viewport.name,recovered:true});
     }
     fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify({generatedAt:new Date().toISOString(),chrome,report},null,2));
     console.log(JSON.stringify(report,null,2));
