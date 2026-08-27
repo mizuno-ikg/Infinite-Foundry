@@ -58,4 +58,7 @@
     btn.addEventListener('contextmenu',e=>{if(holding)e.preventDefault()});
     btn.addEventListener('lostpointercapture',()=>{if(holding){holding=false;stop()}});
   });
+
+  const css=document.createElement('link');css.rel='stylesheet';css.href='playfeel-round5.css';document.head.appendChild(css);
+  const script=document.createElement('script');script.src='playfeel-round5.js';document.body.appendChild(script);
 })();
