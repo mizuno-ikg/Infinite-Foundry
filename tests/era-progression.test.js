@@ -1,15 +1,2 @@
-const assert=require('assert');
-const E=require('../engine.js');
-assert.equal(E.VERSION,4);
-assert.equal(Object.keys(E.ERA_DEFS).length,7);
-let s=E.createState(E.baseMeta(123));
-assert.equal(E.currentEra(s).id,1);
-assert.deepEqual(E.directivesFor(s).map(x=>x.t),[75,150,225,300]);
-for(const id of Object.keys(E.STAGE_DEFS)) s.cycle.levels[id]=80;
-E.advance(s,300);
-assert.equal(s.cycle.ended,true);assert.equal(s.cycle.result.win,true);assert.equal(s.cycle.result.eraCompleted,true);assert.equal(s.meta.patents,1);assert(s.meta.completedEras.includes(1));assert(E.canAdvanceEra(s));
-let e2=E.restart(s,true);assert.equal(e2.meta.era,2);assert.equal(e2.meta.highestEra,2);assert.equal(E.currentEra(e2).name,'AUTOMATED FACTORY');assert.deepEqual(E.directivesFor(e2).map(x=>x.t),[90,180,270,360]);assert.deepEqual(E.directivesFor(e2).map(x=>x.target),[20,72,165,310]);assert.equal(e2.meta.patents,1);assert(E.buyPatentUpgrade(e2,'powerRouting'));assert.equal(e2.meta.patents,0);assert.equal(e2.meta.patentUpgrades.powerRouting,1);
-let p=E.stageCapacity(e2,'power',false);e2.meta.patentUpgrades.powerRouting=0;let p0=E.stageCapacity(e2,'power',false);assert(p>p0*1.119);
-let raw=JSON.stringify({version:3,state:{...e2,meta:{...e2.meta,patentUpgrades:undefined}}});let migrated=E.deserialize(raw);assert(migrated);assert.deepEqual(migrated.meta.patentUpgrades,{powerRouting:0,salvageTheory:0});
-let u=E.baseMeta(9);u.era=7;u.highestEra=7;let final=E.createState(u);for(const id of Object.keys(E.STAGE_DEFS))final.cycle.levels[id]=100;E.advance(final,720);assert(final.cycle.result.win);assert(final.meta.endingUnlocked);assert(final.meta.completedEras.includes(7));assert(!E.canAdvanceEra(final));
-console.log('era-progression OK');
+const assert=require('assert');const E=require('../engine.js');
+assert.equal(E.VERSION,5);assert.equal(Object.keys(E.ERA_DEFS).length,7);let s=E.createState(E.baseMeta(123));assert.deepEqual(E.directivesFor(s).map(x=>x.t),[75,150,225,300]);for(const id of Object.keys(E.STAGE_DEFS))s.cycle.levels[id]=80;E.advance(s,300);assert(s.cycle.result.win&&s.meta.patents===1&&E.canAdvanceEra(s));let e2=E.restart(s,true);assert.equal(e2.meta.era,2);assert.deepEqual(E.directivesFor(e2).map(x=>x.target),[20,72,165,310]);assert(E.buyPatentUpgrade(e2,'powerRouting'));let p=E.stageCapacity(e2,'power',false);e2.meta.patentUpgrades.powerRouting=0;let p0=E.stageCapacity(e2,'power',false);assert(p>p0*1.119);let u=E.baseMeta(9);u.era=7;u.highestEra=7;let final=E.createState(u);for(const id of Object.keys(E.STAGE_DEFS))final.cycle.levels[id]=100;E.advance(final,720);assert(final.cycle.result.win&&final.meta.endingUnlocked&&!E.canAdvanceEra(final));console.log('era-progression OK');

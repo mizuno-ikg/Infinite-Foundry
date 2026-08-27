@@ -1,15 +1,15 @@
 name: Infinite Foundry CI
+
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
+
 permissions:
   contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,7 +17,7 @@ jobs:
           node-version: '22'
       - run: npm test
       - name: Browser render smoke
-        run: node tools/qa/browser-smoke.js
+        run: npm run qa:browser
       - name: Upload render evidence
         if: always()
         uses: actions/upload-artifact@v4

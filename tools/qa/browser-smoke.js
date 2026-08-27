@@ -1,54 +1,19 @@
 'use strict';
-const fs=require('fs');
-const path=require('path');
-const {spawn,execFileSync}=require('child_process');
-const assert=require('assert');
-const ROOT=path.resolve(__dirname,'../..'),OUT=path.join(ROOT,'qa-browser');
-fs.mkdirSync(OUT,{recursive:true});
+const fs=require('fs'),path=require('path'),http=require('http'),{spawn}=require('child_process'),assert=require('assert');
+const ROOT=path.resolve(__dirname,'../..'),OUT=path.join(ROOT,'qa-browser');fs.mkdirSync(OUT,{recursive:true});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function findChrome(){if(process.env.CHROME_BIN&&fs.existsSync(process.env.CHROME_BIN))return process.env.CHROME_BIN;for(const name of ['google-chrome','google-chrome-stable','chromium','chromium-browser']){try{const p=execFileSync('which',[name],{encoding:'utf8'}).trim();if(p&&fs.existsSync(p))return p}catch(_){}}for(const p of ['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/snap/bin/chromium'])if(fs.existsSync(p))return p;throw new Error('No Chrome/Chromium binary found on runner')}
-function chromeArgs(profile,width,height,url,budget=1800){return ['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--hide-scrollbars','--no-first-run','--no-default-browser-check',`--user-data-dir=${profile}`,`--virtual-time-budget=${budget}`,`--window-size=${width},${height}`,url]}
-async function main(){
-  const chrome=findChrome();console.log(`browser qa using ${chrome}`);
-  const server=spawn('python3',['-m','http.server','4173','--bind','127.0.0.1'],{cwd:ROOT,stdio:'ignore'});await sleep(500);
-  const report=[];
-  try{
-    for(const viewport of [{name:'desktop',width:1440,height:1000},{name:'mobile',width:390,height:844}]){
-      for(const era of [1,4,7]){
-        const url=`http://127.0.0.1:4173/index.html?qaEra=${era}`;
-        const base=`/tmp/if-qa-${process.pid}-${viewport.name}-${era}`;
-        const dom=execFileSync(chrome,[...chromeArgs(`${base}-dom`,viewport.width,viewport.height,url),'--dump-dom'],{encoding:'utf8',timeout:20000,stdio:['ignore','pipe','ignore']});
-        assert(dom.includes(`data-era="${era}"`),`${viewport.name} Era ${era}: body era missing`);
-        assert(dom.includes('data-qa-overflow="0"'),`${viewport.name} Era ${era}: horizontal overflow detected`);
-        assert(dom.includes('class="era-world"'),`${viewport.name} Era ${era}: visual world missing`);
-        assert(/id="protocolName">[^<]+</.test(dom),`${viewport.name} Era ${era}: domain protocol UI missing`);
-        const expected=era===1?'SOURCE':era===4?'CRUST MINES':'PRIME MATTER';assert(dom.includes(`>${expected}</b>`),`${viewport.name} Era ${era}: machine identity missing`);
-        const screenshot=path.join(OUT,`era-${era}-${viewport.name}.png`);
-        execFileSync(chrome,[...chromeArgs(`${base}-shot`,viewport.width,viewport.height,url),`--screenshot=${screenshot}`],{timeout:20000,stdio:'ignore'});
-        assert(fs.existsSync(screenshot)&&fs.statSync(screenshot).size>10000,`${viewport.name} Era ${era}: screenshot missing/empty`);
-        report.push({kind:'render',viewport:viewport.name,era,overflow:0,protocol:true,machine:expected,screenshot:path.basename(screenshot)});
-      }
-      const flowUrl='http://127.0.0.1:4173/tools/qa/browser-flow.html';
-      const flowBase=`/tmp/if-flow-${process.pid}-${viewport.name}`;
-      const flowDom=execFileSync(chrome,[...chromeArgs(flowBase,viewport.width,viewport.height,flowUrl,6000),'--dump-dom'],{encoding:'utf8',timeout:30000,stdio:['ignore','pipe','ignore']});
-      assert(flowDom.includes('data-qa-flow="pass"'),`${viewport.name}: interaction flow failed`);
-      assert(flowDom.includes('data-qa-era="2"'),`${viewport.name}: ascend/reload did not preserve Era II`);
-      assert(flowDom.includes('data-qa-speed="4"'),`${viewport.name}: ×4 speed did not survive reload`);
-      assert(flowDom.includes('data-qa-reload="pass"'),`${viewport.name}: save/reload flow missing`);
-      assert(flowDom.includes('data-qa-upgrade="pass"'),`${viewport.name}: machine tap/upgrade flow missing`);
-      const flowScreenshot=path.join(OUT,`interaction-${viewport.name}.png`);
-      execFileSync(chrome,[...chromeArgs(`${flowBase}-shot`,viewport.width,viewport.height,flowUrl,6000),`--screenshot=${flowScreenshot}`],{timeout:30000,stdio:'ignore'});
-      assert(fs.existsSync(flowScreenshot)&&fs.statSync(flowScreenshot).size>10000,`${viewport.name}: interaction screenshot missing/empty`);
-      report.push({kind:'interaction',viewport:viewport.name,prestige:true,patent:true,blueprint:true,ascendEra:2,speed:4,upgrade:true,reload:true,screenshot:path.basename(flowScreenshot)});
-
-      const corruptUrl='http://127.0.0.1:4173/tools/qa/browser-corrupt-save.html';
-      const corruptBase=`/tmp/if-corrupt-${process.pid}-${viewport.name}`;
-      const corruptDom=execFileSync(chrome,[...chromeArgs(corruptBase,viewport.width,viewport.height,corruptUrl,5000),'--dump-dom'],{encoding:'utf8',timeout:30000,stdio:['ignore','pipe','ignore']});
-      assert(corruptDom.includes('data-qa-corrupt="pass"'),`${viewport.name}: corrupt save recovery failed`);
-      report.push({kind:'corrupt-save',viewport:viewport.name,recovered:true});
-    }
-    fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify({generatedAt:new Date().toISOString(),chrome,report},null,2));
-    console.log(JSON.stringify(report,null,2));
-  } finally {server.kill('SIGTERM')}
-}
+function findChrome(){for(const p of [process.env.CHROME_BIN,'/usr/bin/chromium','/usr/bin/google-chrome','/usr/bin/google-chrome-stable'].filter(Boolean))if(fs.existsSync(p))return p;throw new Error('No Chrome/Chromium')}
+function getJson(url){return new Promise((resolve,reject)=>{http.get(url,r=>{let b='';r.on('data',d=>b+=d);r.on('end',()=>{try{resolve(JSON.parse(b))}catch(e){reject(e)}})}).on('error',reject)})}
+class CDP{constructor(url){this.url=url;this.id=1;this.waiters=new Map()}async open(){this.ws=new WebSocket(this.url);await new Promise((res,rej)=>{this.ws.addEventListener('open',res,{once:true});this.ws.addEventListener('error',rej,{once:true})});this.ws.addEventListener('message',ev=>{const m=JSON.parse(ev.data);if(m.id&&this.waiters.has(m.id)){const {resolve,reject}=this.waiters.get(m.id);this.waiters.delete(m.id);m.error?reject(new Error(m.error.message)):resolve(m.result)}})}send(method,params={}){const id=this.id++;this.ws.send(JSON.stringify({id,method,params}));return new Promise((resolve,reject)=>this.waiters.set(id,{resolve,reject}))}close(){try{this.ws.close()}catch(_){}}}
+async function waitBrowser(port){for(let i=0;i<60;i++){try{const pages=await getJson(`http://127.0.0.1:${port}/json`);if(pages.length)return pages[0]}catch(_){}await sleep(100)}throw new Error('DevTools did not start')}
+async function evalValue(cdp,expression){const r=await cdp.send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw new Error(r.exceptionDetails.text||'Runtime exception');return r.result.value}
+async function navigate(cdp,url,wait=700){await cdp.send('Page.navigate',{url});await sleep(wait)}
+async function shot(cdp,file){const r=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false,fromSurface:true});fs.writeFileSync(file,Buffer.from(r.data,'base64'));assert(fs.statSync(file).size>10000,`screenshot too small: ${file}`)}
+async function runViewport(v,port){const chrome=findChrome(),profile=`/tmp/if-cdp-${process.pid}-${v.name}`;fs.rmSync(profile,{recursive:true,force:true});const proc=spawn('xvfb-run',['-a',chrome,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','--remote-allow-origins=*',`--remote-debugging-port=${port}`,`--user-data-dir=${profile}`,`--window-size=${v.width},${v.height}`,'about:blank'],{stdio:['ignore','ignore','ignore']});let cdp;const report=[];try{const page=await waitBrowser(port);cdp=new CDP(page.webSocketDebuggerUrl);await cdp.open();await cdp.send('Page.enable');await cdp.send('Runtime.enable');await cdp.send('Emulation.setDeviceMetricsOverride',{width:v.width,height:v.height,deviceScaleFactor:1,mobile:v.name==='mobile'});
+ for(const era of [1,4,7]){await navigate(cdp,`http://127.0.0.1:4173/index.html?qaEra=${era}`,900);const got=await evalValue(cdp,'document.body.dataset.era');const overflow=await evalValue(cdp,'Math.max(0,document.documentElement.scrollWidth-innerWidth)');assert.equal(got,String(era),`${v.name} Era ${era}`);assert.equal(overflow,0,`${v.name} Era ${era} overflow`);assert(await evalValue(cdp,'!!document.querySelector(".era-world")'));const file=path.join(OUT,`era-${era}-${v.name}.png`);await shot(cdp,file);report.push({kind:'render',viewport:v.name,era,screenshot:path.basename(file)})}
+ await cdp.send('Storage.clearDataForOrigin',{origin:'http://127.0.0.1:4173',storageTypes:'local_storage'}).catch(()=>{});await navigate(cdp,'http://127.0.0.1:4173/index.html?fresh=1',650);assert.equal(await evalValue(cdp,'document.getElementById("introOverlay").hidden'),false,'intro missing');const intro=path.join(OUT,`intro-${v.name}.png`);await shot(cdp,intro);report.push({kind:'intro',viewport:v.name,screenshot:path.basename(intro)});
+ await navigate(cdp,'http://127.0.0.1:4173/tools/qa/browser-ux.html',200);for(let i=0;i<80;i++){if(await evalValue(cdp,'document.body.dataset.qaUx')==='pass')break;const err=await evalValue(cdp,'document.body.dataset.qaError||""');if(err)throw new Error(`${v.name} UX: ${err}`);await sleep(150)}assert.equal(await evalValue(cdp,'document.body.dataset.qaUx'),'pass',`${v.name} UX flow`);for(const k of ['qaIntro','qaPause','qaHelp','qaStatus','qaModule','qaResult'])assert.equal(await evalValue(cdp,`document.body.dataset.${k}`),'pass',`${v.name} ${k}`);const ux=path.join(OUT,`ux-${v.name}.png`);await shot(cdp,ux);report.push({kind:'ux',viewport:v.name,screenshot:path.basename(ux)});
+ await navigate(cdp,'http://127.0.0.1:4173/tools/qa/browser-corrupt-save.html',200);for(let i=0;i<50;i++){if(await evalValue(cdp,'document.body.dataset.qaCorrupt')==='pass')break;const err=await evalValue(cdp,'document.body.dataset.qaError||""');if(err)throw new Error(`${v.name} corrupt: ${err}`);await sleep(120)}assert.equal(await evalValue(cdp,'document.body.dataset.qaCorrupt'),'pass',`${v.name} corrupt recovery`);report.push({kind:'corrupt',viewport:v.name});return report;
+ }finally{if(cdp)cdp.close();proc.kill('SIGTERM');await sleep(150);proc.kill('SIGKILL')}}
+async function main(){const server=spawn('python3',['-m','http.server','4173','--bind','127.0.0.1'],{cwd:ROOT,stdio:'ignore'});await sleep(400);try{const report=[...(await runViewport({name:'desktop',width:1440,height:1000},9222)),...(await runViewport({name:'mobile',width:390,height:844},9223))];fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify({generatedAt:new Date().toISOString(),report},null,2));console.log(JSON.stringify(report,null,2))}finally{server.kill('SIGTERM')}}
 main().catch(e=>{console.error(e);process.exitCode=1});
