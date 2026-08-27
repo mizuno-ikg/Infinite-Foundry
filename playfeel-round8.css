@@ -1,0 +1,4 @@
+/* Round 8: input confidence — focus should remain obvious after direct-control and modal changes. */
+.machine-upgrade:focus-visible,.automation-modes button:focus-visible,#overclock:focus-visible,#pauseBtn:focus-visible,#helpBtn:focus-visible,#statusBtn:focus-visible,.modal button:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;box-shadow:0 0 0 2px rgba(6,15,18,.92),0 0 18px rgba(94,220,240,.24)}
+.machine-upgrade.impact:focus-visible{outline-color:var(--amber);box-shadow:0 0 0 2px rgba(6,15,18,.92),0 0 20px rgba(255,174,74,.30)}
+@media(prefers-reduced-motion:reduce){.machine-upgrade:focus-visible,.automation-modes button:focus-visible,#overclock:focus-visible,#pauseBtn:focus-visible,#helpBtn:focus-visible,#statusBtn:focus-visible,.modal button:focus-visible{scroll-behavior:auto}}
