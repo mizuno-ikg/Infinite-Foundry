@@ -54,8 +54,10 @@
   setInterval(syncVisualState,500);
   syncVisualState();
 
-  const round6=document.createElement('link');
-  round6.rel='stylesheet';
-  round6.href='playfeel-round6.css';
-  document.head.appendChild(round6);
+  for(const href of ['playfeel-round6.css','playfeel-round7.css']){
+    const link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href=href;
+    document.head.appendChild(link);
+  }
 })();
