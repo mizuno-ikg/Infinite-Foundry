@@ -1,0 +1,13 @@
+'use strict';
+const assert=require('assert'),fs=require('fs');
+const css=fs.readFileSync('playfeel-round6.css','utf8');
+const loader=fs.readFileSync('playfeel-round5.js','utf8');
+assert(loader.includes("round6.href='playfeel-round6.css'"),'Round 6 CSS must be chained after Round 5');
+assert(css.includes('@media(max-width:620px)'),'Round 6 must explicitly target phone layouts');
+assert(css.includes('min-height:44px'),'direct upgrade touch target must retain a 44px minimum height');
+assert(css.includes('left:4px;right:4px;top:4px;width:auto;min-width:0'),'mobile upgrade control must occupy its own top strip instead of colliding with machine identity');
+assert(css.includes('padding:52px 5px 20px'),'machine content must be displaced below the direct-control strip');
+assert(css.includes('top:auto;bottom:7px'),'growth pips must leave the top control/identity zone on mobile');
+assert(css.includes('.power-wrap>.machine{min-height:132px;padding-top:52px}'),'power machine must follow the same mobile control separation');
+assert(css.includes('@media(max-width:390px)'),'narrow-phone typography must have an explicit density fallback');
+console.log('playfeel round6 contract tests passed');
