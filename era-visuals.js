@@ -45,6 +45,13 @@
   mechanicsScript.onload=()=>setupProtocols(window.InfiniteFoundryEraMechanics);
   document.head.append(mechanicsScript);
 
+  const playfeelStyle=document.createElement('link');
+  playfeelStyle.rel='stylesheet';playfeelStyle.href='playfeel-v1.2.css';document.head.append(playfeelStyle);
+  const playfeelLogic=document.createElement('script');
+  playfeelLogic.src='playfeel-logic.js';
+  playfeelLogic.onload=()=>{const s=document.createElement('script');s.src='playfeel-v1.2.js';document.head.append(s)};
+  document.head.append(playfeelLogic);
+
   function setupProtocols(M){
     if(!M)return;
     const style=document.createElement('style');
