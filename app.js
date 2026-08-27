@@ -35,6 +35,7 @@ function save(){
     return true;
   }catch(_){
     storageState.available=false;
+    lastSaveReal=performance.now();
     $('saveState').textContent='SAVE UNAVAILABLE';
     return false;
   }
