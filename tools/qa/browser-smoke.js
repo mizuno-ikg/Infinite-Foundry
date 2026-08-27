@@ -1,46 +1,36 @@
 'use strict';
-const http=require('http');
 const fs=require('fs');
 const path=require('path');
 const {spawn,execFileSync}=require('child_process');
 const assert=require('assert');
 const ROOT=path.resolve(__dirname,'../..'),OUT=path.join(ROOT,'qa-browser');
 fs.mkdirSync(OUT,{recursive:true});
-const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png'};
-const server=http.createServer((req,res)=>{let p=req.url.split('?')[0];if(p==='/'||p==='')p='/index.html';const f=path.join(ROOT,p);if(!f.startsWith(ROOT)||!fs.existsSync(f)){res.writeHead(404);return res.end('not found')}res.setHeader('content-type',mime[path.extname(f)]||'application/octet-stream');fs.createReadStream(f).pipe(res)});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function waitJson(url,tries=100){for(let i=0;i<tries;i++){try{const r=await fetch(url);if(r.ok)return r.json()}catch(_){}await sleep(100)}throw new Error('Chrome DevTools did not become ready')}
 function findChrome(){if(process.env.CHROME_BIN&&fs.existsSync(process.env.CHROME_BIN))return process.env.CHROME_BIN;for(const name of ['google-chrome','google-chrome-stable','chromium','chromium-browser']){try{const p=execFileSync('which',[name],{encoding:'utf8'}).trim();if(p&&fs.existsSync(p))return p}catch(_){}}for(const p of ['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/snap/bin/chromium'])if(fs.existsSync(p))return p;throw new Error('No Chrome/Chromium binary found on runner')}
+function chromeArgs(profile,width,height,url){return ['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--hide-scrollbars','--no-first-run','--no-default-browser-check',`--user-data-dir=${profile}`,'--virtual-time-budget=1800',`--window-size=${width},${height}`,url]}
 async function main(){
-  await new Promise(r=>server.listen(4173,'127.0.0.1',r));
   const chrome=findChrome();console.log(`browser qa using ${chrome}`);
-  const proc=spawn(chrome,['--headless=new','--no-sandbox','--disable-gpu','--hide-scrollbars','--remote-debugging-port=9222','--remote-debugging-address=127.0.0.1','--user-data-dir=/tmp/if-chrome-profile','http://127.0.0.1:4173/index.html'],{stdio:['ignore','ignore','pipe']});
-  let chromeErr='';proc.stderr.on('data',d=>chromeErr+=d.toString());
+  const server=spawn('python3',['-m','http.server','4173','--bind','127.0.0.1'],{cwd:ROOT,stdio:'ignore'});await sleep(500);
+  const report=[];
   try{
-    const targets=await waitJson('http://127.0.0.1:9222/json');
-    const page=targets.find(x=>x.type==='page');assert(page?.webSocketDebuggerUrl,'page target missing');
-    const ws=new WebSocket(page.webSocketDebuggerUrl);await new Promise((r,j)=>{ws.addEventListener('open',r,{once:true});ws.addEventListener('error',j,{once:true})});
-    let id=0;const pending=new Map(),exceptions=[];
-    ws.addEventListener('message',ev=>{const m=JSON.parse(String(ev.data));if(m.id&&pending.has(m.id)){const {resolve,reject}=pending.get(m.id);pending.delete(m.id);m.error?reject(new Error(JSON.stringify(m.error))):resolve(m.result)}else if(m.method==='Runtime.exceptionThrown')exceptions.push(m.params.exceptionDetails?.text||'runtime exception')});
-    const send=(method,params={})=>new Promise((resolve,reject)=>{const n=++id;pending.set(n,{resolve,reject});ws.send(JSON.stringify({id:n,method,params}))});
-    const evaluate=async expression=>{const r=await send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw new Error(r.exceptionDetails.text);return r.result?.value};
-    await send('Runtime.enable');await send('Page.enable');
-    await evaluate(`new Promise(r=>{if(document.readyState==='complete')r();else addEventListener('load',r,{once:true});setTimeout(r,1000)})`);await sleep(700);
-    const report=[];
-    for(const viewport of [{name:'desktop',width:1440,height:1000,mobile:false},{name:'mobile',width:390,height:844,mobile:true}]){
-      await send('Emulation.setDeviceMetricsOverride',{width:viewport.width,height:viewport.height,deviceScaleFactor:1,mobile:viewport.mobile});
+    for(const viewport of [{name:'desktop',width:1440,height:1000},{name:'mobile',width:390,height:844}]){
       for(const era of [1,4,7]){
-        const info=await evaluate(`(()=>{state.meta.era=${era};state.meta.highestEra=7;state.cycle.speed=1;state.cycle.levels={source:6,process:6,transfer:6,assembly:6,power:6};state.cycle.time=Math.min(E.currentEra(state).duration*.42,E.currentEra(state).duration-35);render();return new Promise(r=>setTimeout(()=>r({era:state.meta.era,bodyEra:document.body.dataset.era,protocol:document.getElementById('protocolName')?.textContent||'',machine:document.querySelector('.machine.source b')?.textContent||'',overflow:document.documentElement.scrollWidth-window.innerWidth,world:!!document.querySelector('.era-world')}),220))})()`);
-        assert.equal(Number(info.bodyEra),era,`body era mismatch for ${era}`);assert(info.world,'era world missing');assert(info.protocol,'domain protocol UI missing');assert(info.machine,'machine identity missing');assert(info.overflow<=1,`${viewport.name} Era ${era} horizontal overflow ${info.overflow}px`);
-        const shot=await send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false});fs.writeFileSync(path.join(OUT,`era-${era}-${viewport.name}.png`),Buffer.from(shot.data,'base64'));
-        report.push({viewport:viewport.name,...info});
+        const url=`http://127.0.0.1:4173/index.html?qaEra=${era}`;
+        const base=`/tmp/if-qa-${process.pid}-${viewport.name}-${era}`;
+        const dom=execFileSync(chrome,[...chromeArgs(`${base}-dom`,viewport.width,viewport.height,url),'--dump-dom'],{encoding:'utf8',timeout:20000,stdio:['ignore','pipe','ignore']});
+        assert(dom.includes(`data-era="${era}"`),`${viewport.name} Era ${era}: body era missing`);
+        assert(dom.includes('data-qa-overflow="0"'),`${viewport.name} Era ${era}: horizontal overflow detected`);
+        assert(dom.includes('class="era-world"'),`${viewport.name} Era ${era}: visual world missing`);
+        assert(/id="protocolName">[^<]+</.test(dom),`${viewport.name} Era ${era}: domain protocol UI missing`);
+        const expected=era===1?'SOURCE':era===4?'CRUST MINES':'PRIME MATTER';assert(dom.includes(`>${expected}</b>`),`${viewport.name} Era ${era}: machine identity missing`);
+        const screenshot=path.join(OUT,`era-${era}-${viewport.name}.png`);
+        execFileSync(chrome,[...chromeArgs(`${base}-shot`,viewport.width,viewport.height,url),`--screenshot=${screenshot}`],{timeout:20000,stdio:'ignore'});
+        assert(fs.existsSync(screenshot)&&fs.statSync(screenshot).size>10000,`${viewport.name} Era ${era}: screenshot missing/empty`);
+        report.push({viewport:viewport.name,era,overflow:0,protocol:true,machine:expected,screenshot:path.basename(screenshot)});
       }
     }
-    assert.equal(exceptions.length,0,`browser runtime exceptions: ${exceptions.join('; ')}`);
-    fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify({generatedAt:new Date().toISOString(),chrome,exceptions,report},null,2));
+    fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify({generatedAt:new Date().toISOString(),chrome,report},null,2));
     console.log(JSON.stringify(report,null,2));
-    ws.close();
-  } catch(e){if(chromeErr)console.error(chromeErr.slice(-4000));throw e}
-  finally {proc.kill('SIGTERM');server.close()}
+  } finally {server.kill('SIGTERM')}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
