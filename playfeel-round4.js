@@ -12,6 +12,9 @@
     analysis.appendChild(hint);
   }
 
+  const activeStops=new Set();
+  const cancelAllHolds=()=>{for(const stop of [...activeStops])stop()};
+
   document.querySelectorAll('[data-upgrade-id]').forEach(btn=>{
     if(btn.dataset.holdUpgradeReady==='true')return;
     btn.dataset.holdUpgradeReady='true';
@@ -20,13 +23,14 @@
     const stop=()=>{
       clearTimeout(armTimer);clearInterval(repeatTimer);armTimer=0;repeatTimer=0;
       btn.classList.remove('hold-arming','hold-active');
+      activeStops.delete(stop);
       if(pointerId!==null&&btn.hasPointerCapture?.(pointerId)){
         try{btn.releasePointerCapture(pointerId)}catch(_){ }
       }
       pointerId=null;
     };
     const buy=()=>{
-      if(btn.disabled){stop();return}
+      if(btn.disabled||document.hidden){stop();return}
       synthetic=true;
       try{btn.click()}finally{synthetic=false}
       if(btn.disabled)stop();
@@ -41,11 +45,11 @@
 
     btn.addEventListener('pointerdown',e=>{
       if(btn.disabled||e.button!==0)return;
-      stop();pointerId=e.pointerId;
+      stop();pointerId=e.pointerId;activeStops.add(stop);
       try{btn.setPointerCapture(e.pointerId)}catch(_){ }
       btn.classList.add('hold-arming');
       armTimer=setTimeout(()=>{
-        if(btn.disabled)return stop();
+        if(btn.disabled||document.hidden)return stop();
         holding=true;suppressReleaseClick=true;btn.classList.remove('hold-arming');btn.classList.add('hold-active');
         buy();
         repeatTimer=setInterval(buy,cfg.repeatMs);
@@ -58,6 +62,12 @@
     btn.addEventListener('contextmenu',e=>{if(holding)e.preventDefault()});
     btn.addEventListener('lostpointercapture',()=>{if(holding){holding=false;stop()}});
   });
+
+  // Pointer cancellation is normally delivered by the browser, but do not make resource spending
+  // depend on that guarantee. Losing visibility/focus must terminate every repeat loop immediately.
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelAllHolds()});
+  window.addEventListener('blur',cancelAllHolds);
+  window.addEventListener('pagehide',cancelAllHolds);
 
   const css=document.createElement('link');css.rel='stylesheet';css.href='playfeel-round5.css';document.head.appendChild(css);
   const script=document.createElement('script');script.src='playfeel-round5.js';document.body.appendChild(script);
