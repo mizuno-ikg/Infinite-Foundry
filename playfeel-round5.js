@@ -53,4 +53,9 @@
   if(eraBrief)new MutationObserver(syncVisualState).observe(eraBrief,{attributes:true,attributeFilter:['hidden']});
   setInterval(syncVisualState,500);
   syncVisualState();
+
+  const round6=document.createElement('link');
+  round6.rel='stylesheet';
+  round6.href='playfeel-round6.css';
+  document.head.appendChild(round6);
 })();
