@@ -54,10 +54,11 @@
   setInterval(syncVisualState,500);
   syncVisualState();
 
-  for(const href of ['playfeel-round6.css','playfeel-round7.css']){
+  for(const href of ['playfeel-round6.css','playfeel-round7.css','playfeel-round8.css']){
     const link=document.createElement('link');
     link.rel='stylesheet';
     link.href=href;
     document.head.appendChild(link);
   }
+  const round8=document.createElement('script');round8.src='playfeel-round8.js';document.body.appendChild(round8);
 })();
