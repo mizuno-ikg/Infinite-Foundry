@@ -2,6 +2,7 @@
 const assert=require('assert'),fs=require('fs');
 const css=fs.readFileSync('playfeel-round7.css','utf8');
 const loader=fs.readFileSync('playfeel-round5.js','utf8');
+const browserQa=fs.readFileSync('tools/qa/browser-smoke.js','utf8');
 assert(loader.includes("['playfeel-round6.css','playfeel-round7.css']"),'Round 7 CSS must load after Round 6');
 assert(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'),'phone production stages must use a 2-column layout');
 assert(css.includes('.line>.belt{display:none}'),'full belt columns must not consume phone touch width');
@@ -9,4 +10,8 @@ assert(css.includes('min-width:44px'),'direct upgrade control must retain a 44px
 assert(css.includes('min-height:136px'),'phone machine cards must preserve readable vertical space');
 assert(css.includes('content:"→"')&&css.includes('content:"↓"'),'compact mobile production flow must remain visually legible');
 assert(css.includes('max-width:calc(100% - 158px)'),'factory label must reserve horizontal space for the power machine');
+assert(browserQa.includes("name:'mobile-small',width:360,height:800"),'browser QA must include a narrow phone viewport');
+assert(browserQa.includes('Math.min(...g.stageWidths)>=120'),'browser QA must guard minimum machine-card width');
+assert(browserQa.includes('Math.min(...g.upgradeWidths)>=44')&&browserQa.includes('Math.min(...g.upgradeHeights)>=44'),'browser QA must guard 44x44 direct-upgrade targets');
+assert(browserQa.includes('powerStageOverlap')&&browserQa.includes('labelPowerOverlap')&&browserQa.includes('sceneOverflow'),'browser QA must guard overlap and factory-scene overflow');
 console.log('playfeel round7 contract tests passed');
