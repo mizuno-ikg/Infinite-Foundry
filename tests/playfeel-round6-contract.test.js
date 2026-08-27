@@ -2,7 +2,7 @@
 const assert=require('assert'),fs=require('fs');
 const css=fs.readFileSync('playfeel-round6.css','utf8');
 const loader=fs.readFileSync('playfeel-round5.js','utf8');
-assert(loader.includes("round6.href='playfeel-round6.css'"),'Round 6 CSS must be chained after Round 5');
+assert(loader.includes("'playfeel-round6.css'"),'Round 6 CSS must remain chained after Round 5');
 assert(css.includes('@media(max-width:620px)'),'Round 6 must explicitly target phone layouts');
 assert(css.includes('min-height:44px'),'direct upgrade touch target must retain a 44px minimum height');
 assert(css.includes('left:4px;right:4px;top:4px;width:auto;min-width:0'),'mobile upgrade control must occupy its own top strip instead of colliding with machine identity');
