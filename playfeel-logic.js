@@ -7,6 +7,7 @@
   const EPS=1e-9;
   const clone=x=>JSON.parse(JSON.stringify(x));
   const OVERCLOCK_CAPACITOR={maxCharges:3,rechargeSeconds:40,durationSeconds:8};
+  const HOLD_TO_UPGRADE={delayMs:360,repeatMs:120};
 
   function upgradeOutcome(state,E,id){
     if(!state||!E||!E.STAGE_DEFS?.[id])return null;
@@ -135,5 +136,5 @@
     return {charges:cap.charges,maxCharges:cap.maxCharges,nextChargeIn:next,activeSeconds:active,durationSeconds:OVERCLOCK_CAPACITOR.durationSeconds,ready:cap.charges>0&&active<=EPS};
   }
 
-  return {EPS,OVERCLOCK_CAPACITOR,upgradeOutcome,reserveRatio,chooseAutomationUpgrade,repairAutoModuleSwaps,modulePlacementPreview,retainedKnowledgeSummary,ensureOverclockCapacitor,syncOverclockCapacitor,consumeOverclockCharge,overclockReadout};
+  return {EPS,OVERCLOCK_CAPACITOR,HOLD_TO_UPGRADE,upgradeOutcome,reserveRatio,chooseAutomationUpgrade,repairAutoModuleSwaps,modulePlacementPreview,retainedKnowledgeSummary,ensureOverclockCapacitor,syncOverclockCapacitor,consumeOverclockCharge,overclockReadout};
 });
