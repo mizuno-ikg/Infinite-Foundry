@@ -1,0 +1,11 @@
+'use strict';
+const assert=require('assert'),fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..');
+const js=fs.readFileSync(path.join(root,'playfeel-v1.2.js'),'utf8');
+const css=fs.readFileSync(path.join(root,'playfeel-v1.2.css'),'utf8');
+const logic=fs.readFileSync(path.join(root,'playfeel-logic.js'),'utf8');
+for(const needle of ['knowledgeImpact','eraBriefOverlay','eraBriefBegin','REBUILD COMPLETE','modulePlacementPreview','retainedKnowledgeSummary'])assert(js.includes(needle)||logic.includes(needle),`Round 2 contract missing ${needle}`);
+for(const needle of ['.knowledge-impact','.era-brief-modal','.rebuild-banner','.upgrade-react','preview-positive'])assert(css.includes(needle),`Round 2 style missing ${needle}`);
+assert(js.includes('paused=true')&&js.includes('paused=false'),'Era briefing must explicitly halt and resume production');
+assert(js.includes('NEXT FOUNDRY // RETAINED ADVANTAGE'),'retained before/after heading missing');
+console.log('playfeel Round 2 contract tests: ok');
