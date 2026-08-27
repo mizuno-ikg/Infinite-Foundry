@@ -66,5 +66,34 @@
     return repaired;
   }
 
-  return {EPS,upgradeOutcome,reserveRatio,chooseAutomationUpgrade,repairAutoModuleSwaps};
+  function modulePlacementPreview(state,E,uid,bayIndex){
+    if(!state||!E||!uid)return null;
+    const bay=Number(bayIndex),before=E.throughput(state),copy=clone(state);
+    if(!Number.isInteger(bay)||!E.equipModule(copy,uid,bay))return {before,after:before,gain:0,changed:false,bay};
+    const after=E.throughput(copy);
+    return {before,after,gain:after-before,changed:true,bay};
+  }
+
+  function retainedKnowledgeSummary(meta,E){
+    if(!meta||!E)return null;
+    const effects=E.upgradeEffects(meta),base=E.upgradeEffects(E.baseMeta(meta.seed||1));
+    const capital=Number(meta.upgrades?.capital)||0,automation=Number(meta.upgrades?.automation)||0;
+    return {
+      capacity:effects.capacity,
+      capacityBonus:effects.capacity-base.capacity,
+      baseStartCredits:base.startCredits,
+      startCredits:effects.startCredits,
+      startCreditBonus:effects.startCredits-base.startCredits,
+      moduleSlots:effects.moduleSlots,
+      extraModuleSlots:effects.moduleSlots-base.moduleSlots,
+      powerPatent:effects.powerPatent,
+      powerBonus:effects.powerPatent-base.powerPatent,
+      salvageBonus:effects.salvageBonus,
+      automationLevel:automation,
+      automationModes:automation<=0?['OFF']:automation===1?['OFF','ASSIST']:['OFF','ASSIST','SMART'],
+      capitalLevel:capital
+    };
+  }
+
+  return {EPS,upgradeOutcome,reserveRatio,chooseAutomationUpgrade,repairAutoModuleSwaps,modulePlacementPreview,retainedKnowledgeSummary};
 });
