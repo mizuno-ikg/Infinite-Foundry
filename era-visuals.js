@@ -29,6 +29,36 @@
     6:{source:['λ','FIELD SOURCE','Law substrate'],process:['∫','CONSTANT PRESS','Rule transformation'],transfer:['⇌','CAUSAL LINK','State transfer'],assembly:['Ω','LAW ENGINE','Reality integration'],power:['ϟ','VACUUM GRID','Field energy']},
     7:{source:['✺','PRIME MATTER','Genesis feed'],process:['◎','COSMIC FURNACE','Universe formation'],transfer:['∞','SPACETIME WEAVE','Cosmic transport'],assembly:['◈','GENESIS ARRAY','Universe integration'],power:['ϟ','IGNITION CORE','Creation energy']}
   };
+
+  const mechanicsScript=document.createElement('script');
+  mechanicsScript.src='era-mechanics.js';
+  mechanicsScript.onload=()=>setupProtocols(window.InfiniteFoundryEraMechanics);
+  document.head.append(mechanicsScript);
+
+  function setupProtocols(M){
+    if(!M)return;
+    const style=document.createElement('style');
+    style.textContent=`.domain-protocol{border-top:1px solid #2d3940;padding-top:12px}.domain-protocol h3{font-size:12px;letter-spacing:.08em;margin:5px 0;color:var(--cyan)}.domain-protocol p{font-size:10px;line-height:1.45;color:#9aaab2;margin:0 0 7px}.protocol-status{display:block;border-left:2px solid var(--amber);padding:5px 7px;background:#0a1013;color:#c8d2d6;font-size:9px}.protocol-flash{animation:protocolFlash .45s ease-out}@keyframes protocolFlash{0%{box-shadow:inset 0 0 28px rgba(255,170,70,.35)}100%{box-shadow:none}}@media(prefers-reduced-motion:reduce){.protocol-flash{animation:none}}`;
+    document.head.append(style);
+    const section=document.createElement('section');section.className='domain-protocol';section.innerHTML='<span class="eyebrow">DOMAIN PROTOCOL</span><h3 id="protocolName"></h3><p id="protocolCopy"></p><span class="protocol-status" id="protocolStatus"></span>';
+    const modules=document.querySelector('.side .modules');modules?.before(section);
+    const upgradeBtn=document.getElementById('upgradeBtn'),pulseBtn=document.getElementById('overclock');
+    let upgradeCtx=null,pulseCtx=null,lastCycle=state.meta.cycle,lastCheckpointSeen=state.cycle.checkpointResults.length,lastEra=state.meta.era;
+    upgradeBtn?.addEventListener('click',()=>{upgradeCtx={id:selected,level:state.cycle.levels[selected],cost:E.cost(state,selected),was:E.rawBottleneck(state)===selected}},true);
+    upgradeBtn?.addEventListener('click',()=>{if(!upgradeCtx||state.cycle.levels[upgradeCtx.id]===upgradeCtx.level)return;const r=M.afterUpgrade(state,upgradeCtx.id,upgradeCtx.cost,upgradeCtx.was);if(r.message){log(`${M.describe(state).name}: ${r.message}${r.rebate?` +${fmt(r.rebate)} CR`:''}`);flashProtocol()}upgradeCtx=null});
+    pulseBtn?.addEventListener('click',()=>{pulseCtx={ready:state.cycle.overclockReady,time:state.cycle.time}},true);
+    pulseBtn?.addEventListener('click',()=>{if(!pulseCtx||state.cycle.overclockReady===pulseCtx.ready)return;const r=M.afterPulse(state);if(r.message){log(r.message);flashProtocol()}pulseCtx=null});
+    function flashProtocol(){section.classList.remove('protocol-flash');void section.offsetWidth;section.classList.add('protocol-flash')}
+    function refreshProtocol(){
+      if(state.meta.cycle!==lastCycle){lastCycle=state.meta.cycle;lastCheckpointSeen=state.cycle.checkpointResults.length}
+      if(state.meta.era!==lastEra){lastEra=state.meta.era;lastCheckpointSeen=state.cycle.checkpointResults.length}
+      while(lastCheckpointSeen<state.cycle.checkpointResults.length){const r=state.cycle.checkpointResults[lastCheckpointSeen++];log(`ARCHIVE: ${M.storyFor(state,r.index,r.clear)}`)}
+      const d=M.describe(state);document.getElementById('protocolName').textContent=d.name;document.getElementById('protocolCopy').textContent=d.copy;document.getElementById('protocolStatus').textContent=d.status;
+      requestAnimationFrame(refreshProtocol);
+    }
+    refreshProtocol();
+  }
+
   let lastEra=0;
   function refresh(){
     const era=Number(document.body.dataset.era||1);
