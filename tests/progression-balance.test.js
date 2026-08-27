@@ -32,9 +32,6 @@ function playCycle(state){
   return state;
 }
 
-// Transparent, deterministic prestige policy. It favours production first, then
-// starting capital, then slot/QoL unlocks. This is deliberately not an oracle:
-// the goal is to model a plausible player, not to search the optimal build.
 function spendBlueprints(state){
   const order=['efficiency','capital','moduleBay','automation'];
   let bought=true,guard=0;
@@ -47,8 +44,6 @@ function spendBlueprints(state){
 }
 
 function spendPatents(state){
-  // POWER is repeatedly stage-biased in later eras, so routing is the clearest
-  // first permanent choice. Remaining patents improve failure recovery.
   let guard=0;
   while(state.meta.patents>0&&guard++<12){
     if(E.buyPatentUpgrade(state,'powerRouting'))continue;
@@ -59,15 +54,16 @@ function spendPatents(state){
 
 function simulate(seed){
   let state=E.createState(E.baseMeta(seed));
-  const attempts=Array(8).fill(0),fails=Array(8).fill(0),eraGameTime=Array(8).fill(0);
+  const attempts=Array(8).fill(0),fails=Array(8).fill(0),eraGameTime=Array(8).fill(0),ratios=Array.from({length:8},()=>[]);
   let cycles=0,totalGameTime=0;
   while(!state.meta.endingUnlocked&&cycles<MAX_CYCLES){
-    const era=state.meta.era;
+    const era=state.meta.era,target=E.currentEra(state).targets[3];
     attempts[era]++;
     playCycle(state);
     cycles++;
     totalGameTime+=E.currentEra(state).duration;
     eraGameTime[era]+=E.currentEra(state).duration;
+    ratios[era].push(state.cycle.result.average/target);
     const win=state.cycle.result.win;
     if(!win)fails[era]++;
     spendBlueprints(state);
@@ -77,7 +73,7 @@ function simulate(seed){
   }
   return {
     seed,finished:state.meta.endingUnlocked,cycles,totalGameTime,
-    attempts:attempts.slice(1),fails:fails.slice(1),eraGameTime:eraGameTime.slice(1),
+    attempts:attempts.slice(1),fails:fails.slice(1),eraGameTime:eraGameTime.slice(1),ratios:ratios.slice(1),
     blueprints:state.meta.blueprints,patents:state.meta.patents,
     upgrades:{...state.meta.upgrades},patentUpgrades:{...state.meta.patentUpgrades}
   };
@@ -105,20 +101,22 @@ console.log('[progression] seeds',SEEDS,'finish',`${(finishRate*100).toFixed(0)}
   '| x1 minutes p50/p90',minutes(median(timeValues)).toFixed(1),minutes(quantile(timeValues,.9)).toFixed(1),
   '| x4 minutes p50/p90',minutes(median(timeValues)/4).toFixed(1),minutes(quantile(timeValues,.9)/4).toFixed(1));
 console.log('[progression] attempts p50 by era',attemptMedians.join('/'),'p90',attemptP90.join('/'),'fails p50',failMedians.join('/'));
+for(let era=1;era<=7;era++){
+  const maxAttempt=Math.max(...rows.map(r=>r.ratios[era-1].length));
+  const med=[];
+  for(let n=0;n<Math.min(maxAttempt,8);n++){
+    const vals=rows.map(r=>r.ratios[era-1][n]).filter(Number.isFinite);
+    if(vals.length)med.push(`${n+1}:${median(vals).toFixed(2)}`);
+  }
+  console.log(`[progression] E${era} median final/target by attempt`,med.join(' '));
+}
 
-// Completion safety: the permanent-growth loop must converge for every sampled
-// RNG history without relying on a lucky module sequence.
 assert.strictEqual(finishRate,1,'every sampled full run should reach the ending');
 assert.ok(worstCycles<=40,`sampled progression should not become a prestige grind (max ${worstCycles})`);
-
-// The game promises loss, but not repeated punishment. After Workshop, a
-// typical era should take no more than a few rebuilds; p90 catches RNG walls.
 for(let era=2;era<=7;era++){
   assert.ok(attemptMedians[era-1]<=3,`Era ${era} median attempts too high: ${attemptMedians[era-1]}`);
   assert.ok(attemptP90[era-1]<=5,`Era ${era} p90 attempts suggests RNG/prestige wall: ${attemptP90[era-1]}`);
 }
-
-// All permanent systems should have a chance to matter in a complete run.
 assert.ok(rows.some(r=>r.upgrades.efficiency>0),'efficiency must be purchased');
 assert.ok(rows.some(r=>r.upgrades.capital>0),'capital must be purchased');
 assert.ok(rows.some(r=>r.upgrades.moduleBay>0),'module bay must be reachable');
