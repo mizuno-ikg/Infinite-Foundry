@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Infinite Foundry Browser Flow QA</title><style>html,body{margin:0;background:#080c0f;color:#ddd;font:12px monospace}#game{width:100vw;height:100vh;border:0}#result{position:fixed;left:4px;top:4px;z-index:10;background:#000c;padding:4px}</style></head><body data-qa-flow="running"><div id="result">RUNNING</div><iframe id="game" title="Infinite Foundry QA"></iframe><script src="../../engine.js"></script><script>
+'use strict';
+const E=window.InfiniteFoundryEngine,SAVE_KEY='infinite-foundry-save-v1',body=document.body,result=document.getElementById('result'),frame=document.getElementById('game');
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+function assert(v,msg){if(!v)throw new Error(msg)}
+function smart(state){while(!state.cycle.ended){if(state.cycle.time+1e-9>=state.cycle.overclockReady)E.pulse(state);let guard=0;while(guard++<100){const id=E.rawBottleneck(state);if(!E.canUpgrade(state,id))break;E.upgrade(state,id)}E.advance(state,1)}return state}
+function loadFrame(){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('iframe load timeout')),8000);frame.onload=()=>{clearTimeout(timer);resolve()};frame.src='../../index.html?qaFlow=1&v='+Date.now()})}
+async function run(){
+  localStorage.removeItem(SAVE_KEY);
+  const meta=E.baseMeta(424242);meta.upgrades.efficiency=4;meta.upgrades.capital=3;meta.upgrades.automation=3;meta.upgrades.moduleBay=1;
+  const won=smart(E.createState(meta));assert(won.cycle.result&&won.cycle.result.win,'fixture did not clear Workshop');assert(won.meta.patents>=1,'fixture did not earn Patent');
+  localStorage.setItem(SAVE_KEY,E.serialize(won));await loadFrame();await wait(250);
+  let d=frame.contentDocument,w=frame.contentWindow;
+  assert(!d.getElementById('prestigePanel').hidden,'prestige panel not shown');assert(!d.getElementById('advanceEraBtn').hidden,'advance button not shown');
+  const ptBefore=Number(d.getElementById('patents').textContent);d.querySelector('[data-patent-upgrade="powerRouting"]').click();await wait(50);assert(Number(d.getElementById('patents').textContent)===ptBefore-1,'patent click did not spend Patent');
+  const bpBefore=Number(d.getElementById('blueprints').textContent);const metaBtn=[...d.querySelectorAll('[data-meta-upgrade]')].find(x=>!x.disabled);if(metaBtn){metaBtn.click();await wait(50);assert(Number(d.getElementById('blueprints').textContent)<bpBefore,'Blueprint click did not spend BP')}
+  d.getElementById('advanceEraBtn').click();await wait(150);assert(d.body.dataset.era==='2','Era ascend click did not reach Era II');assert(d.getElementById('prestigePanel').hidden,'prestige panel remained open after ascend');
+  d.querySelector('[data-speed="4"]').click();await wait(80);assert(d.querySelector('[data-speed="4"]').classList.contains('active'),'speed ×4 did not activate');
+  const bottleneck=d.querySelector('.machine.bottleneck');assert(bottleneck,'no bottleneck machine');const levelBefore=Number((bottleneck.querySelector('em').textContent.match(/\d+/)||['0'])[0]);bottleneck.click();await wait(30);const upgrade=d.getElementById('upgradeBtn');assert(!upgrade.disabled,'selected bottleneck upgrade unexpectedly disabled');upgrade.click();await wait(80);const levelAfter=Number((bottleneck.querySelector('em').textContent.match(/\d+/)||['0'])[0]);assert(levelAfter===levelBefore+1,'machine tap/upgrade did not increase level');
+  d.getElementById('manualSave').click();await wait(40);const before=JSON.parse(localStorage.getItem(SAVE_KEY));assert(before&&before.state.meta.era===2,'manual save did not persist Era II');const savedCycle=before.state.meta.cycle,savedTime=before.state.cycle.time;
+  await loadFrame();await wait(200);d=frame.contentDocument;assert(d.body.dataset.era==='2','reload did not restore Era II');const after=JSON.parse(localStorage.getItem(SAVE_KEY));assert(after.state.meta.cycle===savedCycle,'reload changed cycle');assert(after.state.cycle.time>=savedTime&&after.state.cycle.time-savedTime<5,'reload applied suspicious catch-up');
+  assert(d.documentElement.scrollWidth<=d.documentElement.clientWidth,'horizontal overflow after flow');
+  body.dataset.qaFlow='pass';body.dataset.qaEra=d.body.dataset.era;body.dataset.qaSpeed=d.querySelector('.speed button.active').dataset.speed;body.dataset.qaReload='pass';body.dataset.qaUpgrade='pass';result.textContent='PASS';
+}
+run().catch(e=>{body.dataset.qaFlow='fail';body.dataset.qaError=e.message;result.textContent='FAIL '+e.message;console.error(e)});
+</script></body></html>
