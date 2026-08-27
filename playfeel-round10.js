@@ -63,4 +63,6 @@
   });
 
   if(cyclePlayfeel()?.eraBriefPending)restoreBriefing();
+
+  const round12=document.createElement('script');round12.src='playfeel-round12.js';document.body.appendChild(round12);
 })();
