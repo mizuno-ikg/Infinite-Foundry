@@ -1,5 +1,6 @@
 'use strict';
 const E=require('../../engine.js');
+globalThis.InfiniteFoundryEngine=E;
 const M=require('../../era-mechanics.js');
 
 const STAGES=Object.keys(E.STAGE_DEFS);
