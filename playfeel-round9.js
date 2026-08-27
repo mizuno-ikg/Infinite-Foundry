@@ -52,4 +52,6 @@
       if(line&&!line.textContent.includes(' CR · LV '))line.append(document.createTextNode(` · -${fmt(cost)} CR · LV ${afterLevel}`));
     });
   },true);
+
+  const round10=document.createElement('script');round10.src='playfeel-round10.js';document.body.appendChild(round10);
 })();
