@@ -1,8 +1,1 @@
-{
-  "name": "infinite-foundry",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "test": "node tests/engine.test.js && node tests/foundation-flow.test.js"
-  }
-}
+{"name":"infinite-foundry","private":true,"scripts":{"test":"node tests/engine.test.js && node tests/foundation-flow.test.js && node tests/era-progression.test.js"}}
