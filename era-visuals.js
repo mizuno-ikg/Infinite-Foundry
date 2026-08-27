@@ -47,9 +47,11 @@
 
   const playfeelStyle=document.createElement('link');
   playfeelStyle.rel='stylesheet';playfeelStyle.href='playfeel-v1.2.css';document.head.append(playfeelStyle);
+  const round3Style=document.createElement('link');
+  round3Style.rel='stylesheet';round3Style.href='playfeel-round3.css';document.head.append(round3Style);
   const playfeelLogic=document.createElement('script');
   playfeelLogic.src='playfeel-logic.js';
-  playfeelLogic.onload=()=>{const s=document.createElement('script');s.src='playfeel-v1.2.js';document.head.append(s)};
+  playfeelLogic.onload=()=>{const s=document.createElement('script');s.src='playfeel-v1.2.js';s.onload=()=>{const r=document.createElement('script');r.src='playfeel-round3.js';document.head.append(r)};document.head.append(s)};
   document.head.append(playfeelLogic);
 
   function setupProtocols(M){
