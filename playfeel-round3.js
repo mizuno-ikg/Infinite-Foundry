@@ -52,4 +52,7 @@
 
   function refresh(){renderCapacitor();renderFactoryGrowth();checkpointFeedback();requestAnimationFrame(refresh)}
   refresh();
+
+  const css=document.createElement('link');css.rel='stylesheet';css.href='playfeel-round4.css';document.head.appendChild(css);
+  const script=document.createElement('script');script.src='playfeel-round4.js';document.body.appendChild(script);
 })();
