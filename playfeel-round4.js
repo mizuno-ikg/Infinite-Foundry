@@ -22,6 +22,7 @@
 
     const stop=()=>{
       clearTimeout(armTimer);clearInterval(repeatTimer);armTimer=0;repeatTimer=0;
+      holding=false;
       btn.classList.remove('hold-arming','hold-active');
       activeStops.delete(stop);
       if(pointerId!==null&&btn.hasPointerCapture?.(pointerId)){
