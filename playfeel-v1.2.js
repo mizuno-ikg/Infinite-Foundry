@@ -41,8 +41,6 @@
 
   const centralUpgrade=document.getElementById('upgradeBtn');
   const autoButtons=[...document.querySelectorAll('[data-auto-mode]')];
-  let autoCycle=state.meta.cycle;
-  let nextAutomationAt=Math.max(75,E.currentEra(state).duration*.25);
   let transitionSnapshot=null,rebuildBannerTimer=0,knowledgeKey='';
 
   function ensureAutomationMode(){
@@ -52,6 +50,22 @@
     if(level<2&&state.meta.automationMode==='smart')state.meta.automationMode='assist';
   }
   ensureAutomationMode();
+
+  function ensureAutomationSchedule(s=state){
+    if(!s?.cycle)return null;
+    if(!s.cycle.playfeel)s.cycle.playfeel={};
+    const pf=s.cycle.playfeel;
+    const floor=Math.max(75,E.currentEra(s).duration*.25);
+    let created=false;
+    if(!Number.isFinite(Number(pf.automationNextAt))){
+      pf.automationNextAt=Math.max(floor,Number(s.cycle.time)||0);
+      created=true;
+    }
+    pf.automationNextAt=Math.max(0,Number(pf.automationNextAt)||floor);
+    return {pf,created};
+  }
+  const initialAutomationSchedule=ensureAutomationSchedule();
+  if(initialAutomationSchedule?.created&&typeof save==='function')save();
 
   const originalAdvance=E.advance.bind(E);
   E.advance=function(s,seconds){
@@ -94,11 +108,13 @@
   }
 
   function maybeAutomate(){
-    if(state.meta.cycle!==autoCycle){autoCycle=state.meta.cycle;nextAutomationAt=Math.max(75,E.currentEra(state).duration*.25)}
+    const schedule=ensureAutomationSchedule();
     const level=Number(state.meta.upgrades.automation)||0,mode=state.meta.automationMode;
-    if(level<=0||mode==='off'||state.cycle.ended||paused||introOpen||state.cycle.time+1e-9<nextAutomationAt)return;
-    const decision=L.chooseAutomationUpgrade(state,E,mode);nextAutomationAt=state.cycle.time+(level>=3?7:10);if(!decision)return;
-    const before=state.cycle.levels[decision.id];select(decision.id);centralUpgrade?.click();if(state.cycle.levels[decision.id]!==before)log(`AUTOMATION // ${E.STAGE_DEFS[decision.id].name} delegated upgrade · reserve ${Math.round(decision.reserve*100)}%`);
+    if(!schedule||level<=0||mode==='off'||state.cycle.ended||paused||introOpen||state.cycle.time+1e-9<schedule.pf.automationNextAt)return;
+    const decision=L.chooseAutomationUpgrade(state,E,mode);
+    schedule.pf.automationNextAt=state.cycle.time+(level>=3?7:10);
+    if(!decision){save();return}
+    const before=state.cycle.levels[decision.id];select(decision.id);centralUpgrade?.click();if(state.cycle.levels[decision.id]!==before)log(`AUTOMATION // ${E.STAGE_DEFS[decision.id].name} delegated upgrade · reserve ${Math.round(decision.reserve*100)}%`);else save();
   }
 
   function renderDirectUpgrades(){
