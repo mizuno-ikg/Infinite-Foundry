@@ -13,16 +13,16 @@
   }
 
   const activeStops=new Set();
-  const cancelAllHolds=()=>{for(const stop of [...activeStops])stop()};
+  const cancelAllHolds=()=>{for(const stop of [...activeStops])stop(true)};
 
   document.querySelectorAll('[data-upgrade-id]').forEach(btn=>{
     if(btn.dataset.holdUpgradeReady==='true')return;
     btn.dataset.holdUpgradeReady='true';
     let armTimer=0,repeatTimer=0,holding=false,suppressReleaseClick=false,synthetic=false,pointerId=null;
 
-    const stop=()=>{
+    const stop=(clearSuppression=false)=>{
       clearTimeout(armTimer);clearInterval(repeatTimer);armTimer=0;repeatTimer=0;
-      holding=false;
+      holding=false;if(clearSuppression)suppressReleaseClick=false;
       btn.classList.remove('hold-arming','hold-active');
       activeStops.delete(stop);
       if(pointerId!==null&&btn.hasPointerCapture?.(pointerId)){
@@ -65,7 +65,8 @@
   });
 
   // Pointer cancellation is normally delivered by the browser, but do not make resource spending
-  // depend on that guarantee. Losing visibility/focus must terminate every repeat loop immediately.
+  // depend on that guarantee. Losing visibility/focus must terminate every repeat loop immediately
+  // and clear release-click suppression so the first fresh tap after returning is never swallowed.
   document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelAllHolds()});
   window.addEventListener('blur',cancelAllHolds);
   window.addEventListener('pagehide',cancelAllHolds);
