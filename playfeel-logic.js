@@ -6,6 +6,7 @@
   'use strict';
   const EPS=1e-9;
   const clone=x=>JSON.parse(JSON.stringify(x));
+  const OVERCLOCK_CAPACITOR={maxCharges:3,rechargeSeconds:40,durationSeconds:8};
 
   function upgradeOutcome(state,E,id){
     if(!state||!E||!E.STAGE_DEFS?.[id])return null;
@@ -95,5 +96,44 @@
     };
   }
 
-  return {EPS,upgradeOutcome,reserveRatio,chooseAutomationUpgrade,repairAutoModuleSwaps,modulePlacementPreview,retainedKnowledgeSummary};
+  function ensureOverclockCapacitor(state){
+    if(!state?.cycle)return null;
+    const now=Math.max(0,Number(state.cycle.time)||0);
+    if(!state.cycle.playfeel)state.cycle.playfeel={};
+    let cap=state.cycle.playfeel.overclockCapacitor;
+    if(!cap||!Number.isFinite(Number(cap.charges))){
+      cap={charges:1,maxCharges:OVERCLOCK_CAPACITOR.maxCharges,rechargeSeconds:OVERCLOCK_CAPACITOR.rechargeSeconds,progress:0,lastGameTime:now};
+      state.cycle.playfeel.overclockCapacitor=cap;
+    }
+    cap.maxCharges=OVERCLOCK_CAPACITOR.maxCharges;
+    cap.rechargeSeconds=OVERCLOCK_CAPACITOR.rechargeSeconds;
+    cap.charges=Math.max(0,Math.min(cap.maxCharges,Math.floor(Number(cap.charges)||0)));
+    cap.progress=Math.max(0,Number(cap.progress)||0);
+    cap.lastGameTime=Number.isFinite(Number(cap.lastGameTime))?Math.min(now,Math.max(0,Number(cap.lastGameTime))):now;
+    return cap;
+  }
+
+  function syncOverclockCapacitor(state){
+    const cap=ensureOverclockCapacitor(state);if(!cap)return null;
+    const now=Math.max(0,Number(state.cycle.time)||0),delta=Math.max(0,now-cap.lastGameTime);cap.lastGameTime=now;
+    if(cap.charges>=cap.maxCharges){cap.progress=0;return cap}
+    cap.progress+=delta;
+    while(cap.progress+EPS>=cap.rechargeSeconds&&cap.charges<cap.maxCharges){cap.progress-=cap.rechargeSeconds;cap.charges++}
+    if(cap.charges>=cap.maxCharges)cap.progress=0;
+    return cap;
+  }
+
+  function consumeOverclockCharge(state){
+    const cap=syncOverclockCapacitor(state);if(!cap||cap.charges<=0)return false;
+    cap.charges--;return true;
+  }
+
+  function overclockReadout(state){
+    const cap=syncOverclockCapacitor(state);if(!cap)return null;
+    const active=Math.max(0,(Number(state.cycle.overclockUntil)||0)-(Number(state.cycle.time)||0));
+    const next=cap.charges>=cap.maxCharges?0:Math.max(0,cap.rechargeSeconds-cap.progress);
+    return {charges:cap.charges,maxCharges:cap.maxCharges,nextChargeIn:next,activeSeconds:active,durationSeconds:OVERCLOCK_CAPACITOR.durationSeconds,ready:cap.charges>0&&active<=EPS};
+  }
+
+  return {EPS,OVERCLOCK_CAPACITOR,upgradeOutcome,reserveRatio,chooseAutomationUpgrade,repairAutoModuleSwaps,modulePlacementPreview,retainedKnowledgeSummary,ensureOverclockCapacitor,syncOverclockCapacitor,consumeOverclockCharge,overclockReadout};
 });
