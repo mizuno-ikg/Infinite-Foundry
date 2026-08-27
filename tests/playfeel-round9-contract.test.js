@@ -1,0 +1,10 @@
+'use strict';
+const assert=require('assert'),fs=require('fs');
+const loader=fs.readFileSync('playfeel-round8.js','utf8');
+const js=fs.readFileSync('playfeel-round9.js','utf8');
+assert(loader.includes("round9.src='playfeel-round9.js'"),'Round 9 automation trust hardening must be loaded by the playfeel chain');
+assert(js.includes('playerSelection')&&js.includes('remember(btn.dataset.upgradeId)'),'Round 9 must track explicit player machine intent separately from programmatic automation selection');
+assert(js.includes('e.isTrusted||directIntentDepth>0'),'legacy/direct player upgrades must not be mistaken for delegated automation');
+assert(js.includes('queueMicrotask')&&js.includes('select(restore)'),'delegated automation must restore the player working context before paint');
+assert(js.includes('AUTOMATION //')&&js.includes('fmt(cost)')&&js.includes('afterLevel'),'automation log must expose exact spend and resulting level');
+console.log('playfeel round9 contract tests passed');
