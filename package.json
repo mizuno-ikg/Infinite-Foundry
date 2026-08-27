@@ -2,7 +2,7 @@
   "name":"infinite-foundry",
   "private":true,
   "scripts":{
-    "test":"node tests/engine.test.js && node tests/foundation-flow.test.js && node tests/era-progression.test.js && node tests/visual-contract.test.js && node tests/era-mechanics.test.js && node tests/playfeel-logic.test.js && node tests/playfeel-round2-contract.test.js && node tests/playfeel-round3-contract.test.js && node tests/playfeel-round4-contract.test.js && node tests/playfeel-round5-contract.test.js && node tests/progression-balance.test.js",
+    "test":"node tests/engine.test.js && node tests/foundation-flow.test.js && node tests/era-progression.test.js && node tests/visual-contract.test.js && node tests/era-mechanics.test.js && node tests/playfeel-logic.test.js && node tests/playfeel-round2-contract.test.js && node tests/playfeel-round3-contract.test.js && node tests/playfeel-round4-contract.test.js && node tests/playfeel-round5-contract.test.js && node tests/playfeel-round6-contract.test.js && node tests/progression-balance.test.js",
     "qa:browser":"node tools/qa/browser-smoke.js",
     "stress:progression":"IF_PROGRESSION_SEEDS=80 node tests/progression-balance.test.js"
   }
