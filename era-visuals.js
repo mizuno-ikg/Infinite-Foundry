@@ -20,6 +20,15 @@
     <div class="era-universe"></div>`;
   scene.prepend(world);
 
+  const qaRequested=Number(new URLSearchParams(location.search).get('qaEra'));
+  const qaEra=(location.hostname==='127.0.0.1'||location.hostname==='localhost')&&qaRequested>=1&&qaRequested<=7?qaRequested:0;
+  if(qaEra){
+    state.meta.era=qaEra;state.meta.highestEra=7;state.cycle.speed=1;
+    state.cycle.levels={source:6,process:6,transfer:6,assembly:6,power:6};
+    state.cycle.time=Math.min(E.currentEra(state).duration*.42,E.currentEra(state).duration-35);
+    render();
+  }
+
   const identities={
     1:{source:['⛏','SOURCE','Input'],process:['♨','PROCESS','Conversion'],transfer:['⇢','TRANSFER','Logistics'],assembly:['⚙','ASSEMBLY','Integration'],power:['ϟ','POWER','Energy grid']},
     2:{source:['▣','FEED ARRAY','Auto intake'],process:['⌬','ROBOT CELLS','Continuous conversion'],transfer:['⇶','SMART BELTS','Synced logistics'],assembly:['⚙','AUTO ASSEMBLY','Machine integration'],power:['ϟ','GRID CORE','Load routing']},
@@ -45,9 +54,9 @@
     const upgradeBtn=document.getElementById('upgradeBtn'),pulseBtn=document.getElementById('overclock');
     let upgradeCtx=null,pulseCtx=null,lastCycle=state.meta.cycle,lastCheckpointSeen=state.cycle.checkpointResults.length,lastEra=state.meta.era;
     upgradeBtn?.addEventListener('click',()=>{upgradeCtx={id:selected,level:state.cycle.levels[selected],cost:E.cost(state,selected),was:E.rawBottleneck(state)===selected}},true);
-    upgradeBtn?.addEventListener('click',()=>{if(!upgradeCtx||state.cycle.levels[upgradeCtx.id]===upgradeCtx.level)return;const r=M.afterUpgrade(state,upgradeCtx.id,upgradeCtx.cost,upgradeCtx.was);if(r.message){log(`${M.describe(state).name}: ${r.message}${r.rebate?` +${fmt(r.rebate)} CR`:''}`);flashProtocol()}upgradeCtx=null});
+    upgradeBtn?.addEventListener('click',()=>{if(!upgradeCtx||state.cycle.levels[upgradeCtx.id]===upgradeCtx.level)return;const r=M.afterUpgrade(state,upgradeCtx.id,upgradeCtx.cost,upgradeCtx.was);if(r.message){log(`${M.describe(state).name}: ${r.message}${r.rebate?` +${fmt(r.rebate)} CR`:''}`);flashProtocol();save()}upgradeCtx=null});
     pulseBtn?.addEventListener('click',()=>{pulseCtx={ready:state.cycle.overclockReady,time:state.cycle.time}},true);
-    pulseBtn?.addEventListener('click',()=>{if(!pulseCtx||state.cycle.overclockReady===pulseCtx.ready)return;const r=M.afterPulse(state);if(r.message){log(r.message);flashProtocol()}pulseCtx=null});
+    pulseBtn?.addEventListener('click',()=>{if(!pulseCtx||state.cycle.overclockReady===pulseCtx.ready)return;const r=M.afterPulse(state);if(r.message){log(r.message);flashProtocol();save()}pulseCtx=null});
     function flashProtocol(){section.classList.remove('protocol-flash');void section.offsetWidth;section.classList.add('protocol-flash')}
     function refreshProtocol(){
       if(state.meta.cycle!==lastCycle){lastCycle=state.meta.cycle;lastCheckpointSeen=state.cycle.checkpointResults.length}
@@ -70,6 +79,7 @@
     const levelSum=state?.cycle?.levels?Object.values(state.cycle.levels).reduce((a,b)=>a+b,0):0;
     const growth=ratio>=.72||levelSum>=28?3:ratio>=.38||levelSum>=16?2:ratio>=.12||levelSum>=7?1:0;
     scene.dataset.growth=String(growth);
+    if(qaEra)document.body.dataset.qaOverflow=String(Math.max(0,document.documentElement.scrollWidth-window.innerWidth));
     if(era!==lastEra){
       lastEra=era;
       const cfg=identities[era]||identities[1];
