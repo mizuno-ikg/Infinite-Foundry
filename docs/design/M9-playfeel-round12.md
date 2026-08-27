@@ -33,6 +33,8 @@ This preserves the existing capacitor design (3-charge bank, 40 game-sec recharg
 
 The test is part of the default `npm test` chain.
 
+The browser UX fixture also spends the initial capacitor charge and immediately inspects localStorage, requiring both the depleted charge and active burst deadline to already be durable. `browser-smoke.js` now treats that `qaOverclock` result as a release interaction gate across desktop, 390px mobile, and 360px narrow-mobile runs.
+
 ## Release implication
 
 This removes one more save/reload inconsistency before release. Remaining release gates are still exact develop full tests and desktop/mobile browser rendering/interaction checks; no main/Pages release is justified solely by this change.
