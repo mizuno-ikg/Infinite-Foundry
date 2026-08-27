@@ -58,4 +58,6 @@
   // Dynamic controls are core gameplay controls, so expose their live state to assistive tech too.
   document.getElementById('automationStatus')?.setAttribute('aria-live','polite');
   document.getElementById('statusLive')?.setAttribute('aria-live','polite');
+
+  const round9=document.createElement('script');round9.src='playfeel-round9.js';document.body.appendChild(round9);
 })();
