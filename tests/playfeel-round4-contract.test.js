@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('assert'),fs=require('fs');
+const L=require('../playfeel-logic.js');
+const js=fs.readFileSync('playfeel-round4.js','utf8');
+const css=fs.readFileSync('playfeel-round4.css','utf8');
+const loader=fs.readFileSync('playfeel-round3.js','utf8');
+assert.deepStrictEqual(L.HOLD_TO_UPGRADE,{delayMs:360,repeatMs:120});
+assert(js.includes("addEventListener('pointerdown'"),'hold control must use pointer events');
+assert(js.includes("addEventListener('pointercancel'"),'hold control must cancel safely');
+assert(js.includes('suppressReleaseClick'),'hold must suppress the release click after repeat starts');
+assert(css.includes('min-height:44px'),'mobile upgrade target must retain a comfortable touch size');
+assert(css.includes('touch-action:manipulation'),'direct control should preserve intentional touch interaction');
+assert(loader.includes("script.src='playfeel-round4.js'"),'Round 4 JS must be loaded');
+assert(loader.includes("css.href='playfeel-round4.css'"),'Round 4 CSS must be loaded');
+console.log('playfeel round4 contract tests passed');
