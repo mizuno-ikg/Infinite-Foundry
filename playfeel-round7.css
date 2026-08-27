@@ -1,0 +1,51 @@
+/* Round 7: mobile geometry — preserve readable/tappable machinery instead of crushing four stages into one row. */
+@media(max-width:620px){
+  .factory-scene{height:560px}
+  .line{
+    left:12px;
+    right:12px;
+    bottom:20px;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:20px 12px;
+    align-items:stretch;
+  }
+  .line>.belt{display:none}
+  .line>.machine-wrap{align-self:stretch;min-width:0}
+  .line>.machine-wrap>.machine{height:100%;min-height:136px}
+
+  /* Recreate the production path without spending scarce touch width on full belt columns. */
+  .line>.machine-wrap::after{
+    position:absolute;
+    z-index:5;
+    color:#6b8088;
+    font-size:14px;
+    font-weight:900;
+    line-height:1;
+    text-shadow:0 0 8px rgba(104,216,232,.18);
+    pointer-events:none;
+  }
+  .line>.machine-wrap:nth-child(1)::after{content:"→";right:-12px;top:50%;transform:translate(50%,-50%)}
+  .line>.machine-wrap:nth-child(3)::after{content:"↓";left:50%;bottom:-17px;transform:translate(-50%,50%)}
+  .line>.machine-wrap:nth-child(5)::after{content:"→";right:-12px;top:50%;transform:translate(50%,-50%)}
+
+  .machine-upgrade{min-width:44px}
+  .machine-wrap>.machine b{font-size:8px;letter-spacing:.045em;min-height:18px}
+  .machine-wrap>.machine strong{font-size:13px}
+
+  .power-wrap{top:62px;right:10px;width:122px}
+  .factory-label{left:14px;top:22px;max-width:calc(100% - 158px)}
+  .factory-label strong{font-size:10px}
+}
+
+@media(max-width:390px){
+  .line{left:8px;right:8px;gap:18px 8px}
+  .machine-wrap>.machine b{font-size:7.5px}
+  .machine-upgrade{font-size:7.5px}
+  .power-wrap{right:8px;width:118px}
+  .factory-label{left:10px;max-width:calc(100% - 146px)}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .line>.machine-wrap::after{text-shadow:none}
+}
