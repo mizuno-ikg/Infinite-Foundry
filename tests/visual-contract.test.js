@@ -16,4 +16,6 @@ for(const token of ['era-city','era-planet','era-elevator','era-star','era-orbit
 }
 for(const growth of ['1','2','3'])assert(css.includes(`data-growth=\"${growth}\"`)||css.includes(`data-growth="${growth}"`),`growth tier ${growth} missing`);
 assert(css.includes('prefers-reduced-motion'),'reduced-motion fallback required');
+assert(css.includes('.era-rail .era-node:nth-child(n+5){display:block!important}'),'mobile release must keep late-era progression nodes visible');
+assert(css.includes('button:focus-visible'),'keyboard focus indicator required');
 console.log('visual contract tests passed');
