@@ -23,9 +23,10 @@
   const qaRequested=Number(new URLSearchParams(location.search).get('qaEra'));
   const qaEra=(location.hostname==='127.0.0.1'||location.hostname==='localhost')&&qaRequested>=1&&qaRequested<=7?qaRequested:0;
   if(qaEra){
-    state.meta.era=qaEra;state.meta.highestEra=7;state.cycle.speed=1;
+    state.meta.era=qaEra;state.meta.highestEra=7;state.meta.introSeen=true;state.cycle.speed=1;
     state.cycle.levels={source:6,process:6,transfer:6,assembly:6,power:6};
     state.cycle.time=Math.min(E.currentEra(state).duration*.42,E.currentEra(state).duration-35);
+    if(typeof closeIntro==='function')closeIntro(false);
     render();
   }
 
