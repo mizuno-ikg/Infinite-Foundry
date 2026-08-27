@@ -1,6 +1,12 @@
 const assert=require('assert');
 const E=require('../engine.js');
 
+assert.equal(E.VERSION,3,'era foundation uses save schema v3');
+assert.equal(Object.keys(E.ERA_DEFS).length,7,'all seven Version 1.0 eras are registered');
+assert.equal(E.ERA_DEFS[1].name,'WORKSHOP','era I is Workshop');
+assert.equal(E.ERA_DEFS[7].name,'UNIVERSE FOUNDRY','era VII is Universe Foundry');
+assert.equal(E.currentEra(E.baseMeta(123)).id,1,'new games begin in era I');
+
 function runWithChunks(chunks){
   const s=E.createState(E.baseMeta(123456));
   for(const chunk of chunks) E.advance(s,chunk);
@@ -48,6 +54,10 @@ assert(auto.cycle.events.some(x=>x.type==='automationUpgrade'),'automation memor
 
 let old=E.createState(E.baseMeta(10));
 old.version=1;
+delete old.meta.era;
+delete old.meta.highestEra;
+delete old.meta.patents;
+delete old.meta.completedEras;
 delete old.cycle.events;
 delete old.cycle.nextEventSeq;
 delete old.cycle.automationCheckAt;
@@ -56,6 +66,10 @@ assert(migrated,'v1 save migrates instead of being discarded');
 assert.equal(migrated.version,E.VERSION,'migrated save adopts current engine version');
 assert(Array.isArray(migrated.cycle.events),'migration creates event buffer');
 assert(Number.isFinite(migrated.cycle.automationCheckAt),'migration creates automation schedule');
+assert.equal(migrated.meta.era,1,'pre-era save migrates to Workshop');
+assert.equal(migrated.meta.highestEra,1,'pre-era save receives highest era');
+assert.equal(migrated.meta.patents,0,'pre-era save receives Patent ledger');
+assert.deepStrictEqual(migrated.meta.completedEras,[],'pre-era save receives completion ledger');
 
 const future=E.deserialize(JSON.stringify({version:E.VERSION+1,state:old}));
 assert.equal(future,null,'unknown future save version is rejected safely');
