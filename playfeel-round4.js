@@ -55,6 +55,7 @@
     const release=()=>{if(holding)suppressReleaseClick=true;holding=false;stop()};
     btn.addEventListener('pointerup',release);
     btn.addEventListener('pointercancel',release);
+    btn.addEventListener('contextmenu',e=>{if(holding)e.preventDefault()});
     btn.addEventListener('lostpointercapture',()=>{if(holding){holding=false;stop()}});
   });
 })();
