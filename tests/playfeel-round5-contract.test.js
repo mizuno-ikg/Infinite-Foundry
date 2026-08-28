@@ -3,6 +3,8 @@ const assert=require('assert'),fs=require('fs');
 const js=fs.readFileSync('playfeel-round5.js','utf8');
 const css=fs.readFileSync('playfeel-round5.css','utf8');
 const loader=fs.readFileSync('playfeel-round4.js','utf8');
+const browserUx=fs.readFileSync('tools/qa/browser-ux.html','utf8');
+const browserSmoke=fs.readFileSync('tools/qa/browser-smoke.js','utf8');
 assert(loader.includes("css.href='playfeel-round5.css'"),'Round 5 CSS must be loaded after Round 4');
 assert(loader.includes("script.src='playfeel-round5.js'"),'Round 5 JS must be loaded after Round 4');
 assert(js.includes('FINAL GOAL // FINAL DIRECTIVE DECIDES SUCCESS'),'final success condition must be explicit');
@@ -13,4 +15,7 @@ assert(css.includes('.machine.selected{outline:0!important}'),'obsolete selectio
 assert(css.includes('.machine-upgrade.impact'),'immediate line-gain investment must retain primary emphasis');
 assert(css.includes('.factory-scene.visual-halt *{animation-play-state:paused!important}'),'factory motion must halt with the simulation');
 assert(css.includes('@media(prefers-reduced-motion:reduce)'),'Round 5 must preserve reduced-motion handling');
+assert(browserUx.includes('closing help must preserve a pre-existing manual pause'),'browser UX must test pause provenance instead of only generic Help pause');
+assert(browserUx.includes("qaPauseProvenance='pass'"),'browser UX must expose pause provenance gate');
+assert(browserSmoke.includes("'qaPauseProvenance'"),'desktop/mobile browser smoke must require pause provenance gate');
 console.log('playfeel round5 contract tests passed');
