@@ -2,6 +2,7 @@
 (()=>{
   const scene=document.getElementById('factoryScene');
   if(!scene)return;
+  const UI_STATE_REFRESH_MS=100;
 
   // A persisted Era briefing must halt simulation before the first animation-frame tick.
   // Round 10 restores the briefing UI later in the dynamic playfeel loader chain, but
@@ -78,13 +79,16 @@
       if(state.meta.cycle!==lastCycle){lastCycle=state.meta.cycle;lastCheckpointSeen=state.cycle.checkpointResults.length}
       if(state.meta.era!==lastEra){lastEra=state.meta.era;lastCheckpointSeen=state.cycle.checkpointResults.length}
       while(lastCheckpointSeen<state.cycle.checkpointResults.length){const r=state.cycle.checkpointResults[lastCheckpointSeen++];log(`ARCHIVE: ${M.storyFor(state,r.index,r.clear)}`)}
-      const d=M.describe(state);document.getElementById('protocolName').textContent=d.name;document.getElementById('protocolCopy').textContent=d.copy;document.getElementById('protocolStatus').textContent=d.status;
-      requestAnimationFrame(refreshProtocol);
+      const d=M.describe(state),name=document.getElementById('protocolName'),copy=document.getElementById('protocolCopy'),status=document.getElementById('protocolStatus');
+      if(name&&name.textContent!==d.name)name.textContent=d.name;
+      if(copy&&copy.textContent!==d.copy)copy.textContent=d.copy;
+      if(status&&status.textContent!==d.status)status.textContent=d.status;
+      setTimeout(refreshProtocol,UI_STATE_REFRESH_MS);
     }
     refreshProtocol();
   }
 
-  let lastEra=0;
+  let lastEra=0,lastGrowth='';
   function refresh(){
     const era=Number(document.body.dataset.era||1);
     let finalTarget=1,current=0;
@@ -93,8 +97,8 @@
     }catch(_){ }
     const ratio=Math.max(0,current/finalTarget);
     const levelSum=state?.cycle?.levels?Object.values(state.cycle.levels).reduce((a,b)=>a+b,0):0;
-    const growth=ratio>=.72||levelSum>=28?3:ratio>=.38||levelSum>=16?2:ratio>=.12||levelSum>=7?1:0;
-    scene.dataset.growth=String(growth);
+    const growth=String(ratio>=.72||levelSum>=28?3:ratio>=.38||levelSum>=16?2:ratio>=.12||levelSum>=7?1:0);
+    if(growth!==lastGrowth){lastGrowth=growth;scene.dataset.growth=growth}
     if(qaEra)document.body.dataset.qaOverflow=String(Math.max(0,document.documentElement.scrollWidth-window.innerWidth));
     if(era!==lastEra){
       lastEra=era;
@@ -106,7 +110,7 @@
       });
       scene.classList.remove('era-arrive');void scene.offsetWidth;scene.classList.add('era-arrive');
     }
-    requestAnimationFrame(refresh);
+    setTimeout(refresh,UI_STATE_REFRESH_MS);
   }
   refresh();
 })();
