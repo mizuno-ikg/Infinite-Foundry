@@ -2,6 +2,12 @@
 (()=>{
   const scene=document.getElementById('factoryScene');
   if(!scene)return;
+
+  // A persisted Era briefing must halt simulation before the first animation-frame tick.
+  // Round 10 restores the briefing UI later in the dynamic playfeel loader chain, but
+  // this parser-blocking script runs immediately after app.js and before rAF can advance.
+  if(state?.cycle?.playfeel?.eraBriefPending){paused=true;last=performance.now()}
+
   const world=document.createElement('div');
   world.className='era-world';
   world.setAttribute('aria-hidden','true');
