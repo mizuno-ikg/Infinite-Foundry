@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('assert');
+const H=require('../tools/balance/human-proxy.js');
+assert.deepStrictEqual(Object.keys(H.MODES),['optimal','attentive','relaxed']);
+const a=H.simulateRoute(0x7100042,{mode:'attentive',maxCycles:5});
+const b=H.simulateRoute(0x7100042,{mode:'attentive',maxCycles:5});
+assert.deepStrictEqual(a,b,'human proxy must be deterministic for a fixed seed/mode');
+assert(a.attempts.length===7&&a.firstAttemptWins.length===7&&a.ratios.length===7);
+assert(a.cycles>0&&a.cycles<=5);
+assert(a.decisions.some(x=>x>0),'proxy must make decisions');
+const o=H.simulateRoute(0x7100042,{mode:'optimal',maxCycles:1});
+const r=H.simulateRoute(0x7100042,{mode:'relaxed',maxCycles:1});
+assert(o.decisions[0]>=r.decisions[0],'optimal proxy should react at least as often as relaxed proxy');
+console.log('human balance contract: ok');
