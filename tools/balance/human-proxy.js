@@ -32,21 +32,23 @@ function playCycle(state,{mode='attentive',seed=1,focusPolicy='off'}={}){
       buys+=decide(state,r,mode);decisions++;nextDecision=state.cycle.time+delayFor(r,mode);
     }
   }
-  return {state,decisions,buys,focusChanges,ratio:state.cycle.result.average/E.currentEra(state).targets[3],memoryEarned:Number(state.cycle.result.memoryEarned)||0,researchData:Number(state.cycle.researchData)||0};
+  const moduleRecoveries=state.cycle.moduleInventory.length;
+  const automationUpgrades=state.cycle.events.filter(x=>x.type==='automationUpgrade').length;
+  return {state,decisions,buys,focusChanges,moduleRecoveries,automationUpgrades,ratio:state.cycle.result.average/E.currentEra(state).targets[3],memoryEarned:Number(state.cycle.result.memoryEarned)||0,researchData:Number(state.cycle.researchData)||0};
 }
 function spendBlueprints(state){const order=['efficiency','capital','moduleBay','automation'];let changed=true,guard=0;while(changed&&guard++<32){changed=false;for(const id of order){if(E.buyMetaUpgrade(state,id)){changed=true;break}}}}
 function spendPatents(state){let guard=0;while(state.meta.patents>0&&guard++<12){if(E.buyPatentUpgrade(state,'powerRouting'))continue;if(E.buyPatentUpgrade(state,'salvageTheory'))continue;break}}
 function startingCredits(state){return Number(state?.cycle?.credits)||0}
 function nextBreakthrough(meta){return P.BREAKTHROUGHS.find(x=>x.threshold>(Number(meta?.foundryMemory)||0))||null}
 function simulateRoute(seed,{mode='attentive',maxCycles=80,focusPolicy='off'}={}){
-  let state=E.createState(E.baseMeta(seed)),cycles=0,totalGameTime=0;const attempts=Array(8).fill(0),firstAttemptWins=Array(8).fill(null),ratios=Array.from({length:8},()=>[]),decisions=Array(8).fill(0),memoryByCycle=[],startCreditsByCycle=[];
+  let state=E.createState(E.baseMeta(seed)),cycles=0,totalGameTime=0;const attempts=Array(8).fill(0),firstAttemptWins=Array(8).fill(null),ratios=Array.from({length:8},()=>[]),decisions=Array(8).fill(0),moduleRecoveries=Array.from({length:8},()=>[]),automationUpgrades=Array.from({length:8},()=>[]),memoryByCycle=[],startCreditsByCycle=[];
   while(!state.meta.endingUnlocked&&cycles<maxCycles){
     const era=state.meta.era;attempts[era]++;startCreditsByCycle.push(startingCredits(state));const memoryBefore=Number(state.meta.foundryMemory)||0;
-    const out=playCycle(state,{mode,focusPolicy,seed:(seed^Math.imul(cycles+1,0x45d9f3b))>>>0});cycles++;totalGameTime+=E.currentEra(state).duration;ratios[era].push(out.ratio);decisions[era]+=out.decisions;if(attempts[era]===1)firstAttemptWins[era]=!!state.cycle.result.win;
+    const out=playCycle(state,{mode,focusPolicy,seed:(seed^Math.imul(cycles+1,0x45d9f3b))>>>0});cycles++;totalGameTime+=E.currentEra(state).duration;ratios[era].push(out.ratio);decisions[era]+=out.decisions;moduleRecoveries[era].push(out.moduleRecoveries);automationUpgrades[era].push(out.automationUpgrades);if(attempts[era]===1)firstAttemptWins[era]=!!state.cycle.result.win;
     memoryByCycle.push({cycle:cycles,era,memoryBefore,memoryEarned:out.memoryEarned,memoryAfter:Number(state.meta.foundryMemory)||0,researchData:out.researchData,win:!!state.cycle.result.win});
     const win=state.cycle.result.win;spendBlueprints(state);spendPatents(state);if(state.meta.endingUnlocked)break;state=E.restart(state,win&&E.canAdvanceEra(state));
   }
-  return {seed,mode,focusPolicy,finished:state.meta.endingUnlocked,cycles,totalGameTime,attempts:attempts.slice(1),firstAttemptWins:firstAttemptWins.slice(1),ratios:ratios.slice(1),decisions:decisions.slice(1),memoryByCycle,startCreditsByCycle,foundryMemory:Number(state.meta.foundryMemory)||0,nextBreakthrough:nextBreakthrough(state.meta),upgrades:{...state.meta.upgrades},patentUpgrades:{...state.meta.patentUpgrades}};
+  return {seed,mode,focusPolicy,finished:state.meta.endingUnlocked,cycles,totalGameTime,attempts:attempts.slice(1),firstAttemptWins:firstAttemptWins.slice(1),ratios:ratios.slice(1),decisions:decisions.slice(1),moduleRecoveries:moduleRecoveries.slice(1),automationUpgrades:automationUpgrades.slice(1),memoryByCycle,startCreditsByCycle,foundryMemory:Number(state.meta.foundryMemory)||0,nextBreakthrough:nextBreakthrough(state.meta),upgrades:{...state.meta.upgrades},patentUpgrades:{...state.meta.patentUpgrades}};
 }
 function simulatePrestigeLoop(seed,{mode='attentive',era=3,maxCycles=12,focusPolicy='off'}={}){
   let meta=E.baseMeta(seed);meta.era=era;meta.highestEra=Math.max(meta.highestEra,era);let state=E.createState(meta);const rows=[];
@@ -54,14 +56,14 @@ function simulatePrestigeLoop(seed,{mode='attentive',era=3,maxCycles=12,focusPol
     const startMemory=Number(state.meta.foundryMemory)||0,startCredits=startingCredits(state),beforeBreakthroughs=P.unlocked(state.meta).map(x=>x.id);
     const out=playCycle(state,{mode,focusPolicy,seed:(seed^Math.imul(i+1,0x27d4eb2d))>>>0});
     const afterMemory=Number(state.meta.foundryMemory)||0,afterBreakthroughs=P.unlocked(state.meta).map(x=>x.id);
-    rows.push({cycle:i+1,era,startMemory,startCredits,ratio:out.ratio,win:!!state.cycle.result.win,memoryEarned:out.memoryEarned,afterMemory,researchData:out.researchData,newBreakthroughs:afterBreakthroughs.filter(x=>!beforeBreakthroughs.includes(x))});
+    rows.push({cycle:i+1,era,startMemory,startCredits,ratio:out.ratio,win:!!state.cycle.result.win,memoryEarned:out.memoryEarned,afterMemory,researchData:out.researchData,moduleRecoveries:out.moduleRecoveries,automationUpgrades:out.automationUpgrades,newBreakthroughs:afterBreakthroughs.filter(x=>!beforeBreakthroughs.includes(x))});
     state=E.restart(state,false);
   }
   return {seed,mode,era,focusPolicy,rows,finalMemory:Number(state.meta.foundryMemory)||0};
 }
 function summarize(rows){
   const q=(a,p)=>{const v=[...a].sort((x,y)=>x-y);return v.length?v[Math.floor((v.length-1)*p)]:0};
-  const era=Array.from({length:7},(_,i)=>{const first=rows.filter(r=>r.firstAttemptWins[i]!=null),allRatios=rows.flatMap(r=>r.ratios[i]);return {era:i+1,firstAttemptClear:first.length?first.filter(r=>r.firstAttemptWins[i]).length/first.length:null,attemptP50:q(rows.map(r=>r.attempts[i]),.5),attemptP90:q(rows.map(r=>r.attempts[i]),.9),ratioP50:q(allRatios,.5),ratioP10:q(allRatios,.1)}});
+  const era=Array.from({length:7},(_,i)=>{const first=rows.filter(r=>r.firstAttemptWins[i]!=null),allRatios=rows.flatMap(r=>r.ratios[i]),modules=rows.flatMap(r=>r.moduleRecoveries?.[i]||[]),autos=rows.flatMap(r=>r.automationUpgrades?.[i]||[]);return {era:i+1,firstAttemptClear:first.length?first.filter(r=>r.firstAttemptWins[i]).length/first.length:null,attemptP50:q(rows.map(r=>r.attempts[i]),.5),attemptP90:q(rows.map(r=>r.attempts[i]),.9),ratioP50:q(allRatios,.5),ratioP10:q(allRatios,.1),moduleRecoveriesP50:q(modules,.5),automationUpgradesP50:q(autos,.5)}});
   const allMemory=rows.flatMap(r=>r.memoryByCycle||[]),firstFailureGains=[];
   for(const r of rows){const f=(r.memoryByCycle||[]).find(x=>!x.win&&x.memoryEarned>0);if(f)firstFailureGains.push(f.memoryEarned)}
   return {mode:rows[0]?.mode||'unknown',focusPolicy:rows[0]?.focusPolicy||'off',finishRate:rows.length?rows.filter(r=>r.finished).length/rows.length:0,cyclesP50:q(rows.map(r=>r.cycles),.5),cyclesP90:q(rows.map(r=>r.cycles),.9),finalMemoryP50:q(rows.map(r=>r.foundryMemory||0),.5),firstMeaningfulFailureMemoryP50:q(firstFailureGains,.5),memoryPerCycleP50:q(allMemory.map(x=>x.memoryEarned),.5),era};
