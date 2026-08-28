@@ -15,6 +15,8 @@ assert(a.cycles>0&&a.cycles<=5);
 assert(a.decisions.some(x=>x>0),'proxy must make decisions');
 assert.strictEqual(a.memoryByCycle.length,a.cycles,'proxy must expose retained-progress history per cycle');
 assert(a.memoryByCycle.every(x=>x.memoryAfter>=x.memoryBefore),'Foundry Memory must never decrease');
+assert(a.moduleRecoveries.length===7&&a.automationUpgrades.length===7,'M12 proxy must expose cadence telemetry per Era');
+assert(a.moduleRecoveries.flat().some(x=>x>=1),'shortened runs must still recover Modules');
 const o=H.simulateRoute(0x7100042,{mode:'optimal',maxCycles:1});
 const r=H.simulateRoute(0x7100042,{mode:'relaxed',maxCycles:1});
 assert(o.decisions[0]>=r.decisions[0],'optimal proxy should react at least as often as relaxed proxy');
