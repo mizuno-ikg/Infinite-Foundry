@@ -119,6 +119,12 @@
     state.cycle.researchFocus=next;
     return true;
   }
+  function researchFromProduction(state,produced){
+    const target=E.directivesFor(state).slice(-1)[0]?.target||1;
+    const diverted=Math.max(0,Number(produced)||0)*0.18;
+    const unit=Math.max(1e-9,target*15*0.18);
+    return {diverted,data:diverted/unit};
+  }
 
   E.baseMeta=function(seed){const m=original.baseMeta(seed);m.foundryMemory=0;m.memorySchemaVersion=SCHEMA;return m};
   E.createState=function(meta){
@@ -128,14 +134,13 @@
   };
   E.advance=function(state,gameSeconds){
     applyCycleMemory(state);
-    const wasEnded=!!state.cycle.ended,beforeOutput=Number(state.cycle.output)||0,beforeTime=Number(state.cycle.time)||0;
+    const wasEnded=!!state.cycle.ended,beforeOutput=Number(state.cycle.output)||0;
     const n=original.advance(state,gameSeconds);
     const produced=Math.max(0,(Number(state.cycle.output)||0)-beforeOutput);
-    const elapsed=Math.max(0,(Number(state.cycle.time)||0)-beforeTime);
-    if(state.cycle.researchFocus&&elapsed>0){
-      const diverted=produced*0.18;
-      state.cycle.credits=Math.max(0,state.cycle.credits-diverted);
-      state.cycle.researchData+=elapsed/45;
+    if(state.cycle.researchFocus&&produced>0){
+      const research=researchFromProduction(state,produced);
+      state.cycle.credits=Math.max(0,state.cycle.credits-research.diverted);
+      state.cycle.researchData+=research.data;
     }
     if(!wasEnded&&state.cycle.ended)awardMemory(state);
     return n;
@@ -151,7 +156,7 @@
   };
   E.serialize=function(state){migrateMemory(state.meta);return original.serialize(state)};
 
-  const api={SCHEMA,BREAKTHROUGHS,migrateMemory,unlocked,continuousBonus,applyBreakthroughFloors,memoryEarned,memoryForecast,awardMemory,setResearchFocus};
+  const api={SCHEMA,BREAKTHROUGHS,migrateMemory,unlocked,continuousBonus,applyBreakthroughFloors,memoryEarned,memoryForecast,awardMemory,setResearchFocus,researchFromProduction};
   E.__prestigeM11Installed=api;
   return api;
 });
