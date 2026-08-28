@@ -7,6 +7,7 @@
   if(E.__prestigeM11Installed)return E.__prestigeM11Installed;
 
   const SCHEMA=1;
+  const RESEARCH_MEANINGFUL_THRESHOLD=0.25;
   const BREAKTHROUGHS=[
     {id:'capital-I',threshold:12,name:'CAPITAL RECALL I'},
     {id:'automation-I',threshold:30,name:'AUTOMATION SCHEMATICS'},
@@ -33,7 +34,7 @@
       if(!Number.isFinite(meta.memorySchemaVersion))meta.memorySchemaVersion=SCHEMA;
       return meta;
     }
-    const legacy=inventedBlueprints(meta);
+    const legacy=investedBlueprints(meta);
     const eraCredit=(Array.isArray(meta.completedEras)?meta.completedEras.length:0)*8;
     const successCredit=Math.max(0,Number(meta.successfulCycles)||0)*3;
     meta.foundryMemory=Math.max(0,Math.round(legacy*1.5+eraCredit+successCredit));
@@ -82,7 +83,8 @@
     const target=E.directivesFor(state).slice(-1)[0]?.target||1;
     const ratio=Math.max(0,Math.min(1,E.sustainedAverage(state,30)/target));
     const clears=(state.cycle.checkpointResults||[]).filter(x=>x.clear).length;
-    return timeRatio>=0.08||ratio>=0.05||clears>0||Number(state.cycle.researchData)>0;
+    const research=Math.max(0,Number(state.cycle.researchData)||0);
+    return timeRatio>=0.08||ratio>=0.05||clears>0||research>=RESEARCH_MEANINGFUL_THRESHOLD;
   }
   function memoryEarned(state){
     if(!meaningful(state))return 0;
@@ -156,7 +158,7 @@
   };
   E.serialize=function(state){migrateMemory(state.meta);return original.serialize(state)};
 
-  const api={SCHEMA,BREAKTHROUGHS,migrateMemory,unlocked,continuousBonus,applyBreakthroughFloors,memoryEarned,memoryForecast,awardMemory,setResearchFocus,researchFromProduction};
+  const api={SCHEMA,RESEARCH_MEANINGFUL_THRESHOLD,BREAKTHROUGHS,migrateMemory,unlocked,continuousBonus,applyBreakthroughFloors,memoryEarned,memoryForecast,awardMemory,setResearchFocus,researchFromProduction};
   E.__prestigeM11Installed=api;
   return api;
 });
