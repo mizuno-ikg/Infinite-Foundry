@@ -12,6 +12,8 @@
     .salvage-run-btn,.research-focus-btn{width:100%;border:1px solid #55483d;background:#151311;color:#bcae9d;padding:7px 9px;font-size:8px;font-weight:800;letter-spacing:.08em;cursor:pointer}
     .salvage-run-btn:hover,.research-focus-btn:hover{border-color:#8b6f51;color:#ecd4b8}.salvage-run-btn:disabled,.research-focus-btn:disabled{opacity:.35;cursor:not-allowed}
     .research-focus-btn.active{border-color:#b98b57;color:#ffe1ae;background:#21180f}
+    .memory-result-m11{margin-top:10px;border:1px solid #4e4439;background:#12100e;padding:9px 10px;display:grid;gap:4px}
+    .memory-result-m11 strong{font-size:9px;letter-spacing:.1em;color:#f1d0a1}.memory-result-m11 span{font-size:9px;color:#c6b9a9}.memory-result-m11 small{font-size:8px;color:#8f8478}
     @media(max-width:620px){.salvage-run-btn,.research-focus-btn{min-height:44px;font-size:9px}}
   `;
   document.head.append(style);
@@ -79,6 +81,20 @@
     btn.addEventListener('click',salvageCurrentRun);row.append(btn);top.append(row);
   }
 
+  function baseStartingCreditsAt(memory){
+    if(!P||!state?.meta)return null;
+    const m=JSON.parse(JSON.stringify(state.meta));m.foundryMemory=Math.max(0,Number(memory)||0);P.applyBreakthroughFloors(m);
+    return 20+8*(Number(m.upgrades?.capital)||0)+P.continuousBonus(m);
+  }
+  function refreshMemoryResult(){
+    const r=state?.cycle?.result,panel=document.getElementById('prestigePanel');
+    if(!P||!r||!panel||!Number.isFinite(Number(r.memoryAfter)))return;
+    const before=Number(r.memoryBefore)||0,after=Number(r.memoryAfter)||0,next=P.BREAKTHROUGHS.find(x=>after<x.threshold),startBefore=baseStartingCreditsAt(before),startAfter=baseStartingCreditsAt(after);
+    let box=document.getElementById('memoryResultM11');if(!box){box=document.createElement('div');box.id='memoryResultM11';box.className='memory-result-m11';const anchor=document.getElementById('resultReason');(anchor?.parentNode||panel).insertBefore(box,anchor?.nextSibling||null)}
+    const unlocked=(r.newBreakthroughs||[]).length?`NEW BREAKTHROUGH // ${r.newBreakthroughs.join(' · ')}`:(next?`NEXT BREAKTHROUGH // ${next.threshold-after} MEMORY TO ${next.name}`:'ALL BREAKTHROUGHS ONLINE');
+    box.innerHTML=`<strong>RETAINED PROGRESS // +${Number(r.memoryEarned)||0} MEMORY</strong><span>FOUNDRY MEMORY ${Math.floor(before)} → ${Math.floor(after)}</span><span>BASE STARTING CREDITS ${startBefore.toFixed(1)} → ${startAfter.toFixed(1)}</span><small>${unlocked}</small>`;
+  }
+
   function refresh(){
     const btn=document.getElementById('salvageRunBtn');
     if(btn)btn.disabled=!!(!state?.cycle||state.cycle.ended||introOpen);
@@ -95,6 +111,7 @@
       if(reason)reason.textContent='Current foundry was dismantled by choice. Retained progress is already banked; rebuild immediately when ready.';
       if(restart)restart.textContent='BEGIN NEXT CYCLE';
     }
+    refreshMemoryResult();
     const wallet=document.getElementById('metaWallet');
     if(wallet&&P&&state?.meta){
       const m=Math.floor(state.meta.foundryMemory||0),next=P.BREAKTHROUGHS.find(x=>m<x.threshold);
