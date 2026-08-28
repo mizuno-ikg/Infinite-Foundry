@@ -2,7 +2,7 @@
 (()=>{
   const E=window.InfiniteFoundryEngine,L=window.InfiniteFoundryPlayfeelLogic;
   if(!E||!L)return;
-  const scene=document.getElementById('factoryScene'),overclock=document.getElementById('overclock');
+  const scene=document.getElementById('factoryScene'),overclock=document.getElementById('overclock'),UI_STATE_REFRESH_MS=100;
 
   function buildRound3UI(){
     if(scene&&!scene.querySelector('.factory-drive')){const d=document.createElement('div');d.className='factory-drive';d.setAttribute('aria-hidden','true');scene.prepend(d)}
@@ -28,20 +28,22 @@
     return true;
   };
 
-  let trackedCycle=state.meta.cycle,lastCheckpointCount=state.cycle.checkpointResults.length,checkpointTimer=0;
+  let trackedCycle=state.meta.cycle,lastCheckpointCount=state.cycle.checkpointResults.length,checkpointTimer=0,lastDrive='',lastOutputBand='';
   function renderCapacitor(){
     if(!overclock)return;const r=L.overclockReadout(state);if(!r)return;
     const locked=state.cycle.ended||paused||introOpen,active=r.activeSeconds>L.EPS,usable=!locked&&r.ready;
     overclock.disabled=!usable;overclock.classList.toggle('cooldown',!usable&&!active);overclock.classList.toggle('capacitor-active',active);overclock.classList.toggle('capacitor-ready',usable);overclock.classList.toggle('capacitor-full',r.charges===r.maxCharges);
-    const span=overclock.querySelector('span'),strong=overclock.querySelector('strong'),small=overclock.querySelector('small');if(span)span.textContent='OVERCLOCK CAPACITOR';
-    if(strong)strong.textContent=state.cycle.ended?'CYCLE END':paused?'PAUSED':active?`ACTIVE ${r.activeSeconds.toFixed(1)}s`:`${r.charges}/${r.maxCharges} CHARGED`;
-    if(small)small.textContent=active?'Current bottleneck boosted +30%.':r.charges===r.maxCharges?`Banked. Spend when timing matters · ${r.durationSeconds}s burst`:`Next charge ${Math.ceil(r.nextChargeIn)} game-sec · bank up to ${r.maxCharges}`;
+    const span=overclock.querySelector('span'),strong=overclock.querySelector('strong'),small=overclock.querySelector('small');if(span&&span.textContent!=='OVERCLOCK CAPACITOR')span.textContent='OVERCLOCK CAPACITOR';
+    const strongText=state.cycle.ended?'CYCLE END':paused?'PAUSED':active?`ACTIVE ${r.activeSeconds.toFixed(1)}s`:`${r.charges}/${r.maxCharges} CHARGED`;
+    const smallText=active?'Current bottleneck boosted +30%.':r.charges===r.maxCharges?`Banked. Spend when timing matters · ${r.durationSeconds}s burst`:`Next charge ${Math.ceil(r.nextChargeIn)} game-sec · bank up to ${r.maxCharges}`;
+    if(strong&&strong.textContent!==strongText)strong.textContent=strongText;if(small&&small.textContent!==smallText)small.textContent=smallText;
     document.querySelectorAll('#overclockCharges i').forEach((pip,i)=>pip.classList.toggle('filled',i<r.charges));
   }
 
   function renderFactoryGrowth(){
-    const final=E.directivesFor(state).at(-1),tp=E.sustainedAverage(state,30)||E.throughput(state),ratio=Math.max(0,Math.min(1.15,tp/final.target));if(scene){scene.style.setProperty('--factory-drive',Math.min(1,ratio).toFixed(3));scene.dataset.outputBand=ratio>=.78?'3':ratio>=.48?'2':ratio>=.18?'1':'0'}
-    document.querySelectorAll('.machine-wrap').forEach(w=>{const id=w.querySelector('.machine')?.dataset.id;if(!id)return;const lv=Number(state.cycle.levels[id])||0,tier=lv>=12?3:lv>=7?2:lv>=3?1:0;w.dataset.levelTier=String(tier);w.querySelectorAll('.machine-growth i').forEach((pip,i)=>pip.classList.toggle('filled',i<tier))});
+    const final=E.directivesFor(state).at(-1),tp=E.sustainedAverage(state,30)||E.throughput(state),ratio=Math.max(0,Math.min(1.15,tp/final.target));
+    if(scene){const drive=Math.min(1,ratio).toFixed(3),band=ratio>=.78?'3':ratio>=.48?'2':ratio>=.18?'1':'0';if(drive!==lastDrive){lastDrive=drive;scene.style.setProperty('--factory-drive',drive)}if(band!==lastOutputBand){lastOutputBand=band;scene.dataset.outputBand=band}}
+    document.querySelectorAll('.machine-wrap').forEach(w=>{const id=w.querySelector('.machine')?.dataset.id;if(!id)return;const lv=Number(state.cycle.levels[id])||0,tier=String(lv>=12?3:lv>=7?2:lv>=3?1:0);if(w.dataset.levelTier===tier)return;w.dataset.levelTier=tier;w.querySelectorAll('.machine-growth i').forEach((pip,i)=>pip.classList.toggle('filled',i<Number(tier)))});
   }
 
   function checkpointFeedback(){
@@ -50,7 +52,7 @@
     clearTimeout(checkpointTimer);scene.classList.remove('checkpoint-react');void scene.offsetWidth;scene.classList.add('checkpoint-react');checkpointTimer=setTimeout(()=>scene.classList.remove('checkpoint-react'),900);
   }
 
-  function refresh(){renderCapacitor();renderFactoryGrowth();checkpointFeedback();requestAnimationFrame(refresh)}
+  function refresh(){renderCapacitor();renderFactoryGrowth();checkpointFeedback();setTimeout(refresh,UI_STATE_REFRESH_MS)}
   refresh();
 
   const css=document.createElement('link');css.rel='stylesheet';css.href='playfeel-round4.css';document.head.appendChild(css);
