@@ -18,7 +18,7 @@ function focusWanted(policy,state){
   if(policy==='late')return state.cycle.time>=E.currentEra(state).duration*.55;
   if(policy==='losing'){
     const era=E.currentEra(state),elapsed=Math.max(1,state.cycle.time),pace=E.sustainedAverage(state,30)/(E.directivesFor(state).at(-1)?.target||1);
-    return elapsed>=era.duration*.35&&pace<.55;
+    return elapsed>=era.duration*.60&&pace<.55;
   }
   return false;
 }
