@@ -39,4 +39,8 @@
     moduleCache.set(key,{...out});
     return out;
   };
+
+  const next=document.createElement('script');
+  next.src='playfeel-round18.js';
+  document.head.append(next);
 })();
