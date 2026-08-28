@@ -20,7 +20,16 @@ const P=install(E);
   P.setResearchFocus(focus,true);
   E.advance(control,45);E.advance(focus,45);
   assert(focus.cycle.credits<control.cycle.credits,'Research Focus must trade current credits for future progress');
-  assert(focus.cycle.researchData>=0.99,'Research Focus should accumulate low-frequency research progress');
+  assert(focus.cycle.researchData>0,'Research Focus should accumulate research from actual production');
+  assert(focus.cycle.researchData<0.2,'Fresh idle production must not generate a full research unit just by waiting 45 seconds');
+}
+{
+  const low=E.createState(E.baseMeta(8));
+  const high=E.createState(E.baseMeta(8));
+  for(const id of Object.keys(high.cycle.levels))high.cycle.levels[id]=12;
+  P.setResearchFocus(low,true);P.setResearchFocus(high,true);
+  E.advance(low,15);E.advance(high,15);
+  assert(high.cycle.researchData>low.cycle.researchData*5,'Research progress must scale with diverted production, not elapsed clock time');
 }
 {
   const s=E.createState(E.baseMeta(9));
