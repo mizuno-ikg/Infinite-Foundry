@@ -14,4 +14,6 @@
     }
     return baseUpgradeOutcome(state,F,id);
   };
+
+  const round17=document.createElement('script');round17.src='playfeel-round17.js';document.body.appendChild(round17);
 })();
