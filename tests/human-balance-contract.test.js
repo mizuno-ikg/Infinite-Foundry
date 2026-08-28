@@ -8,7 +8,15 @@ assert.deepStrictEqual(a,b,'human proxy must be deterministic for a fixed seed/m
 assert(a.attempts.length===7&&a.firstAttemptWins.length===7&&a.ratios.length===7);
 assert(a.cycles>0&&a.cycles<=5);
 assert(a.decisions.some(x=>x>0),'proxy must make decisions');
+assert.strictEqual(a.memoryByCycle.length,a.cycles,'proxy must expose retained-progress history per cycle');
+assert(a.memoryByCycle.every(x=>x.memoryAfter>=x.memoryBefore),'Foundry Memory must never decrease');
 const o=H.simulateRoute(0x7100042,{mode:'optimal',maxCycles:1});
 const r=H.simulateRoute(0x7100042,{mode:'relaxed',maxCycles:1});
 assert(o.decisions[0]>=r.decisions[0],'optimal proxy should react at least as often as relaxed proxy');
+const off=H.simulatePrestigeLoop(0x7100099,{mode:'attentive',era:3,maxCycles:2,focusPolicy:'off'});
+const focus=H.simulatePrestigeLoop(0x7100099,{mode:'attentive',era:3,maxCycles:2,focusPolicy:'always'});
+assert.strictEqual(off.rows[0].researchData,0,'Focus-off oracle must not accumulate Research Data');
+assert(focus.rows[0].researchData>0,'Focus-on oracle must accumulate Research Data');
+assert(off.rows[0].memoryEarned>=1&&focus.rows[0].memoryEarned>=1,'full human-proxy cycles must be meaningful retained-progress runs');
+assert(off.rows[1].startCredits>off.rows[0].startCredits,'one meaningful run must visibly improve next-run starting strength');
 console.log('human balance contract: ok');
