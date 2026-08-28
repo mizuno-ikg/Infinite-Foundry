@@ -24,12 +24,25 @@ const P=install(E);
   assert(focus.cycle.researchData<0.2,'Fresh idle production must not generate a full research unit just by waiting 45 seconds');
 }
 {
+  const s=E.createState(E.baseMeta(71));
+  const target=E.directivesFor(s).at(-1).target;
+  const research=P.researchFromProduction(s,target*30);
+  assert(Math.abs(research.data-1)<1e-9,'One Research Data should require 30 game-sec of final-target-equivalent production');
+}
+{
   const low=E.createState(E.baseMeta(8));
   const high=E.createState(E.baseMeta(8));
   for(const id of Object.keys(high.cycle.levels))high.cycle.levels[id]=12;
   P.setResearchFocus(low,true);P.setResearchFocus(high,true);
   E.advance(low,15);E.advance(high,15);
   assert(high.cycle.researchData>low.cycle.researchData*5,'Research progress must scale with diverted production, not elapsed clock time');
+}
+{
+  const base=E.createState(E.baseMeta(81));
+  const research=E.createState(E.baseMeta(81));
+  E.advance(base,30);E.advance(research,30);
+  research.cycle.researchData=100;
+  assert.strictEqual(P.memoryEarned(research)-P.memoryEarned(base),4,'Research Memory bonus must be capped so Focus cannot dominate normal retained progress');
 }
 {
   const s=E.createState(E.baseMeta(9));
