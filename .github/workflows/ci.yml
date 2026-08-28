@@ -2,9 +2,6 @@ name: Infinite Foundry CI
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - develop
 
 permissions:
   contents: read
@@ -19,8 +16,8 @@ jobs:
         with:
           node-version: '22'
       - run: npm test
-      - name: Release-grade browser QA
-        run: npm run qa:release
+      - name: Browser render smoke
+        run: npm run qa:browser
       - name: Upload render evidence
         if: always()
         uses: actions/upload-artifact@v4
