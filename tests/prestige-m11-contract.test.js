@@ -36,6 +36,14 @@ const P=install(E);
   assert.strictEqual(P.awardMemory(s,{aborted:true}),0,'Immediate abort must not farm Memory');
 }
 {
+  const s=E.createState(E.baseMeta(91));
+  P.setResearchFocus(s,true);
+  E.advance(s,0.05);
+  assert(s.cycle.researchData>0,'Micro focus tick should prove that some research was produced');
+  assert(s.cycle.researchData<P.RESEARCH_MEANINGFUL_THRESHOLD,'Micro focus must remain below the meaningful research floor');
+  assert.strictEqual(P.awardMemory(s,{aborted:true}),0,'Focus toggle plus a micro tick must not farm the minimum Memory award');
+}
+{
   const s=E.createState(E.baseMeta(10));
   E.advance(s,30);
   const earned=P.awardMemory(s,{aborted:true});
