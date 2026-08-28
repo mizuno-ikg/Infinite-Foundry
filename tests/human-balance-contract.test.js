@@ -1,7 +1,12 @@
 'use strict';
 const assert=require('assert');
+const E=require('../engine.js');
 const H=require('../tools/balance/human-proxy.js');
 assert.deepStrictEqual(Object.keys(H.MODES),['optimal','attentive','relaxed']);
+assert.deepStrictEqual(Object.values(E.ERA_DEFS).map(x=>x.duration),[150,165,180,195,210,225,240],'M12 keeps all Era runs short');
+assert.deepStrictEqual(Object.values(E.ERA_DEFS).map(x=>x.targets[3]),[9,27,108,390,1450,4200,11800],'M12 final Directive curve must remain late-game weighted');
+const normalized=Object.values(E.ERA_DEFS).map((x,i)=>x.targets[3]/Math.pow(2.45,i));
+assert(normalized[4]>normalized[3]&&normalized[5]>normalized[4]&&normalized[6]>normalized[5],'Era 5-7 required retained strength must keep rising after native era scaling');
 const a=H.simulateRoute(0x7100042,{mode:'attentive',maxCycles:5});
 const b=H.simulateRoute(0x7100042,{mode:'attentive',maxCycles:5});
 assert.deepStrictEqual(a,b,'human proxy must be deterministic for a fixed seed/mode');
