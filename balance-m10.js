@@ -14,7 +14,13 @@
     .research-focus-btn.active{border-color:#b98b57;color:#ffe1ae;background:#21180f}
     .memory-result-m11{margin-top:10px;border:1px solid #4e4439;background:#12100e;padding:9px 10px;display:grid;gap:4px}
     .memory-result-m11 strong{font-size:9px;letter-spacing:.1em;color:#f1d0a1}.memory-result-m11 span{font-size:9px;color:#c6b9a9}.memory-result-m11 small{font-size:8px;color:#8f8478}
-    @media(max-width:620px){.salvage-run-btn,.research-focus-btn{min-height:44px;font-size:9px}}
+    .inventory-actions button{display:grid;gap:2px;align-content:center;min-width:118px}
+    .inventory-actions button small{font-size:7px;letter-spacing:.04em;opacity:.72;font-weight:600;white-space:nowrap}
+    .inventory-actions button.preview-up small{color:#d8c49e;opacity:1}
+    .inventory-actions button.preview-down small{color:#bb8d83;opacity:1}
+    .m13-first-clear{display:block;margin-top:5px;font-size:8px;font-weight:900;letter-spacing:.08em;color:#f1d0a1}
+    .era-node.past span::after{content:' · ARCHIVED';font-size:.7em;opacity:.58;letter-spacing:.06em}
+    @media(max-width:620px){.salvage-run-btn,.research-focus-btn{min-height:44px;font-size:9px}.inventory-actions button{min-width:0;width:100%;min-height:44px}}
   `;
   document.head.append(style);
 
@@ -95,6 +101,39 @@
     box.innerHTML=`<strong>RETAINED PROGRESS // +${Number(r.memoryEarned)||0} MEMORY</strong><span>FOUNDRY MEMORY ${Math.floor(before)} → ${Math.floor(after)}</span><span>BASE STARTING CREDITS ${startBefore.toFixed(1)} → ${startAfter.toFixed(1)}</span><small>${unlocked}</small>`;
   }
 
+  function linePreview(uid,bay){
+    try{
+      const before=E.throughput(state),copy=JSON.parse(JSON.stringify(state));
+      if(!E.equipModule(copy,uid,bay))return {before,after:before};
+      return {before,after:E.throughput(copy)};
+    }catch(_){return null}
+  }
+  function refreshLoadoutActions(){
+    if(!state?.cycle||!statusOverlay||statusOverlay.hidden)return;
+    document.querySelectorAll('#moduleInventory button[data-uid][data-bay]').forEach(btn=>{
+      const uid=btn.dataset.uid,bay=Number(btn.dataset.bay),from=state.cycle.modules.findIndex(x=>x?.uid===uid),target=state.cycle.modules[bay]||null;
+      if(from===bay){btn.innerHTML=`EQUIPPED · BAY ${bay+1}<small>ACTIVE LOADOUT</small>`;btn.classList.remove('preview-up','preview-down');return}
+      const verb=target?(from>=0?'SWAP':'REPLACE'):'EQUIP',preview=linePreview(uid,bay);
+      if(!preview){btn.textContent=`${verb} → BAY ${bay+1}`;return}
+      const delta=preview.after-preview.before;
+      btn.classList.toggle('preview-up',delta>1e-9);btn.classList.toggle('preview-down',delta<-1e-9);
+      btn.innerHTML=`${verb} → BAY ${bay+1}<small>LINE ${preview.before.toFixed(1)} → ${preview.after.toFixed(1)} /s</small>`;
+      btn.title=`Whole-line throughput preview: ${preview.before.toFixed(2)} → ${preview.after.toFixed(2)} /s`;
+    });
+  }
+  function refreshEraFlow(){
+    const r=state?.cycle?.result;if(!r)return;
+    const adv=E.canAdvanceEra(state),advance=document.getElementById('advanceEraBtn'),restart=document.getElementById('restartBtn'),summary=document.getElementById('resultSummary'),reason=document.getElementById('resultReason');
+    if(r.win&&adv){
+      if(advance){advance.hidden=false;advance.textContent=`ADVANCE TO ERA ${Math.min(7,(Number(state.meta.era)||1)+1)}`}
+      if(restart)restart.hidden=true;
+      if(reason)reason.textContent='Directive secured. This Era is archived; continue forward with all retained knowledge.';
+    }else if(restart)restart.hidden=false;
+    if(r.win&&r.patentsEarned&&summary&&!summary.querySelector('.m13-first-clear')){
+      const note=document.createElement('span');note.className='m13-first-clear';note.textContent=`FIRST CLEAR REWARD // +${r.patentsEarned} PATENT · ONE-TIME`;summary.append(note);
+    }
+  }
+
   function refresh(){
     const btn=document.getElementById('salvageRunBtn');
     if(btn)btn.disabled=!!(!state?.cycle||state.cycle.ended||introOpen);
@@ -111,7 +150,7 @@
       if(reason)reason.textContent='Current foundry was dismantled by choice. Retained progress is already banked; rebuild immediately when ready.';
       if(restart)restart.textContent='BEGIN NEXT CYCLE';
     }
-    refreshMemoryResult();
+    refreshMemoryResult();refreshLoadoutActions();refreshEraFlow();
     const wallet=document.getElementById('metaWallet');
     if(wallet&&P&&state?.meta){
       const m=Math.floor(state.meta.foundryMemory||0),next=P.BREAKTHROUGHS.find(x=>m<x.threshold);
@@ -123,5 +162,5 @@
   }
   refresh();
 
-  window.InfiniteFoundryBalanceM10={earlySalvageValue:s=>L.earlySalvageValue(s,E),salvageCurrentRun,syncSpeedUI};
+  window.InfiniteFoundryBalanceM10={earlySalvageValue:s=>L.earlySalvageValue(s,E),salvageCurrentRun,syncSpeedUI,linePreview};
 })();
