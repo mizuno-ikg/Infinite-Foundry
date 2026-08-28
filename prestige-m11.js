@@ -13,7 +13,7 @@
     {id:'automation-I',threshold:30,name:'AUTOMATION SCHEMATICS'},
     {id:'module-bay-I',threshold:60,name:'EXPANDED MODULE BAY'},
     {id:'efficiency-II',threshold:110,name:'DEEP PROCESS MEMORY'},
-    {id:'capital-III',threshold:180,name:'RECURSIVE CAPITAL'}
+    {id:'capital-III',threshold:130,name:'RECURSIVE CAPITAL'}
   ];
   const original={
     baseMeta:E.baseMeta,createState:E.createState,advance:E.advance,restart:E.restart,
