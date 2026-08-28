@@ -9,9 +9,27 @@
   const OVERCLOCK_CAPACITOR={maxCharges:3,rechargeSeconds:40,durationSeconds:8};
   const HOLD_TO_UPGRADE={delayMs:360,repeatMs:120};
 
+  // Preview calculations run frequently in the live UI. Do not deep-clone the entire
+  // save state (events, samples, inventory history, etc.) just to ask what throughput
+  // would be after one hypothetical placement. Keep only fields used by capacity math.
+  function previewState(state){
+    return {
+      version:state?.version,
+      meta:clone(state?.meta||{}),
+      cycle:{
+        time:Number(state?.cycle?.time)||0,
+        credits:Number(state?.cycle?.credits)||0,
+        ended:!!state?.cycle?.ended,
+        levels:{...(state?.cycle?.levels||{})},
+        modules:(state?.cycle?.modules||[]).map(clone),
+        overclockUntil:Number(state?.cycle?.overclockUntil)||0
+      }
+    };
+  }
+
   function upgradeOutcome(state,E,id){
     if(!state||!E||!E.STAGE_DEFS?.[id])return null;
-    const cost=E.cost(state,id),before=E.throughput(state),copy=clone(state);
+    const cost=E.cost(state,id),before=E.throughput(state),copy=previewState(state);
     if(!E.canUpgrade(copy,id)||!E.upgrade(copy,id))return {id,cost,before,after:before,gain:0,available:false};
     const after=E.throughput(copy);
     return {id,cost,before,after,gain:after-before,available:true};
@@ -51,7 +69,7 @@
       if(!Number.isInteger(bay)||bay<0||bay>=state.cycle.modules.length)continue;
       const current=state.cycle.modules[bay],old=state.cycle.moduleInventory.find(m=>m?.uid===event.replaced);
       if(!current||current.uid!==event.moduleUid||!old)continue;
-      const currentTp=E.throughput(state),copy=clone(state);
+      const currentTp=E.throughput(state),copy=previewState(state);
       copy.cycle.modules[bay]=clone(old);
       const revertedTp=E.throughput(copy);
       if(revertedTp>currentTp+EPS){
@@ -69,9 +87,17 @@
   }
 
   function modulePlacementPreview(state,E,uid,bayIndex){
-    if(!state||!E||!uid)return null;
-    const bay=Number(bayIndex),before=E.throughput(state),copy=clone(state);
-    if(!Number.isInteger(bay)||!E.equipModule(copy,uid,bay))return {before,after:before,gain:0,changed:false,bay};
+    if(!state||!E||!uid||state?.cycle?.ended)return null;
+    const bay=Number(bayIndex),slots=E.upgradeEffects(state.meta).moduleSlots;
+    const m=state.cycle.moduleInventory?.find(x=>x?.uid===uid);
+    if(!m||!Number.isInteger(bay)||bay<0||bay>=slots)return null;
+    const before=E.throughput(state),from=state.cycle.modules.findIndex(x=>x?.uid===uid);
+    if(from===bay)return {before,after:before,gain:0,changed:false,bay};
+    const copy=previewState(state);
+    while(copy.cycle.modules.length<slots)copy.cycle.modules.push(null);
+    const displaced=copy.cycle.modules[bay]||null;
+    copy.cycle.modules[bay]=clone(m);
+    if(from>=0)copy.cycle.modules[from]=clone(displaced);
     const after=E.throughput(copy);
     return {before,after,gain:after-before,changed:true,bay};
   }
