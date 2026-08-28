@@ -24,7 +24,7 @@
     const key=`${id};${structuralSignature(state)}`;
     if(upgradeCache.has(key))return {...upgradeCache.get(key)};
     const out=baseUpgradeOutcome(state,F,id);
-    upgradeCache.clear();
+    if(upgradeCache.size>32)upgradeCache.clear();
     upgradeCache.set(key,{...out});
     return out;
   };
