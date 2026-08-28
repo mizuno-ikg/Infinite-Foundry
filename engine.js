@@ -9,11 +9,11 @@
   const ERA_DEFS={
     1:{id:1,key:'workshop',name:'WORKSHOP',site:'Ember Bay',theme:'ember',duration:150,focus:'Foundational bottlenecks',directive:'FORGE A VIABLE LINE',targets:[2.5,5,7,9],stageBias:{},rewardPatents:1},
     2:{id:2,key:'automated-factory',name:'AUTOMATED FACTORY',site:'Servo District',theme:'electric',duration:165,focus:'Power, automation, module builds',directive:'SUSTAIN AUTONOMOUS OUTPUT',targets:[7,14,21,27],stageBias:{power:0.78,transfer:0.90},rewardPatents:1},
-    3:{id:3,key:'industrial-city',name:'INDUSTRIAL CITY',site:'Iron Meridian',theme:'city',duration:180,focus:'District logistics',directive:'FEED THE INDUSTRIAL GRID',targets:[29,58,86,115],stageBias:{transfer:0.72,assembly:0.88},rewardPatents:1},
-    4:{id:4,key:'planetary-foundry',name:'PLANETARY FOUNDRY',site:'Atlas Crustworks',theme:'planet',duration:195,focus:'Continental supply and orbit',directive:'INDUSTRIALIZE THE PLANET',targets:[80,160,240,320],stageBias:{source:0.76,transfer:0.82},rewardPatents:1},
-    5:{id:5,key:'stellar-forge',name:'STELLAR FORGE',site:'Helios Crown',theme:'stellar',duration:210,focus:'Energy capture and thermal stability',directive:'HARNESS A STAR',targets:[250,500,750,1000],stageBias:{power:0.62,process:0.82},rewardPatents:1},
-    6:{id:6,key:'law-foundry',name:'LAW FOUNDRY',site:'Causality Lattice',theme:'law',duration:225,focus:'Interdependent physical constants',directive:'FABRICATE STABLE LAW',targets:[750,1500,2250,3000],stageBias:{process:0.74,assembly:0.78,power:0.82},rewardPatents:1},
-    7:{id:7,key:'universe-foundry',name:'UNIVERSE FOUNDRY',site:'Genesis Frame',theme:'universe',duration:240,focus:'Final integration and universe ignition',directive:'IGNITE A NEW UNIVERSE',targets:[2250,4500,6750,9000],stageBias:{source:0.84,process:0.80,transfer:0.82,assembly:0.76,power:0.78},rewardPatents:1}
+    3:{id:3,key:'industrial-city',name:'INDUSTRIAL CITY',site:'Iron Meridian',theme:'city',duration:180,focus:'District logistics',directive:'FEED THE INDUSTRIAL GRID',targets:[27,54,81,108],stageBias:{transfer:0.72,assembly:0.88},rewardPatents:1},
+    4:{id:4,key:'planetary-foundry',name:'PLANETARY FOUNDRY',site:'Atlas Crustworks',theme:'planet',duration:195,focus:'Continental supply and orbit',directive:'INDUSTRIALIZE THE PLANET',targets:[97.5,195,292.5,390],stageBias:{source:0.76,transfer:0.82},rewardPatents:1},
+    5:{id:5,key:'stellar-forge',name:'STELLAR FORGE',site:'Helios Crown',theme:'stellar',duration:210,focus:'Energy capture and thermal stability',directive:'HARNESS A STAR',targets:[362.5,725,1087.5,1450],stageBias:{power:0.62,process:0.82},rewardPatents:1},
+    6:{id:6,key:'law-foundry',name:'LAW FOUNDRY',site:'Causality Lattice',theme:'law',duration:225,focus:'Interdependent physical constants',directive:'FABRICATE STABLE LAW',targets:[1050,2100,3150,4200],stageBias:{process:0.74,assembly:0.78,power:0.82},rewardPatents:1},
+    7:{id:7,key:'universe-foundry',name:'UNIVERSE FOUNDRY',site:'Genesis Frame',theme:'universe',duration:240,focus:'Final integration and universe ignition',directive:'IGNITE A NEW UNIVERSE',targets:[2950,5900,8850,11800],stageBias:{source:0.84,process:0.80,transfer:0.82,assembly:0.76,power:0.78},rewardPatents:1}
   };
   const STAGE_DEFS={
     source:{name:'SOURCE',base:1.2,cost:8,costGrowth:1.18,growth:1.11},
