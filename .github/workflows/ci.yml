@@ -2,6 +2,9 @@ name: Infinite Foundry CI
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - develop
 
 permissions:
   contents: read
@@ -9,15 +12,26 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: npm test
-      - name: Browser render smoke
-        run: npm run qa:browser
+      - name: Browser release QA
+        shell: bash
+        run: |
+          set +e
+          npm run qa:release 2>&1 | tee /tmp/if-release-qa.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          if [ "$rc" -ne 0 ] && grep -q "DevTools did not start" /tmp/if-release-qa.log; then
+            echo "CDP startup flake detected; retrying once with fresh Node process/profile and alternate ports."
+            IF_QA_PORT_OFFSET=100 npm run qa:release
+          else
+            exit "$rc"
+          fi
       - name: Upload render evidence
         if: always()
         uses: actions/upload-artifact@v4
