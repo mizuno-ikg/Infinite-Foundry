@@ -19,7 +19,16 @@ jobs:
         with:
           node-version: '22'
       - run: npm test
+      - name: Prepare headless Chrome wrapper
+        run: |
+          cat > /tmp/if-chrome <<'EOF'
+          #!/usr/bin/env bash
+          exec /usr/bin/google-chrome --headless=new "$@"
+          EOF
+          chmod +x /tmp/if-chrome
       - name: Browser render smoke
+        env:
+          CHROME_BIN: /tmp/if-chrome
         run: npm run qa:browser
       - name: Upload render evidence
         if: always()
