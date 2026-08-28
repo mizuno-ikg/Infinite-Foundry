@@ -1,0 +1,10 @@
+'use strict';
+const assert=require('assert'),fs=require('fs'),path=require('path');
+const E=require('../engine.js'),L=require('../balance-m10-logic.js');
+let s=E.createState(E.baseMeta(20260828));
+assert.strictEqual(L.earlySalvageValue(s,E),0,'fresh run must not yield free early salvage');
+s.cycle.levels={source:6,process:6,transfer:6,assembly:6,power:6};E.advance(s,120);const earned=L.earlySalvageValue(s,E),full=E.salvageBlueprints(s);assert(earned>0,'meaningful partial run should yield early salvage');assert(earned<=full,'early salvage cannot exceed full-cycle salvage');
+const ui=fs.readFileSync(path.join(__dirname,'../balance-m10.js'),'utf8');
+for(const token of ['statusAutoPaused','togglePause(true)','togglePause(false)','salvageRunBtn','RUN SALVAGED','syncSpeedUI'])assert(ui.includes(token),`missing M10 UI contract: ${token}`);
+const loader=fs.readFileSync(path.join(__dirname,'../playfeel-round18.js'),'utf8');assert(loader.includes('balance-m10-logic.js')&&loader.includes('balance-m10.js'),'M10 loader chain missing');
+console.log('balance M10 contract: ok');
