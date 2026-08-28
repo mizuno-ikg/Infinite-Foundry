@@ -1,193 +1,240 @@
-# M10 — Post-release balance rework plan
+# M10–M15 — Post-release balance / progression rework
 
-## Why this iteration exists
+## Core diagnosis
 
-2026-08-28の公開版実プレイで、次の問題が確認された。
+公開版の人間プレイで、現行balanceは「1秒ごとに最適投資するbotには成立するが、人間に気持ちよいprogressionとは限らない」ことが明確になった。
 
-1. ゲームオーバー時、とくに序盤の恒久進行が小さく、失敗後の「次は明確に強くなった」という感覚が弱い。
-2. Era 1〜2まで初回から厳しすぎる。序盤は正しくボトルネック投資をしていれば、失敗周回を必須にせずテンポ良く進めたい。
-3. 難易度は平坦ではなく後半ほど急になるべき。後半はそれまでに蓄積したBlueprint / Patent / Automation / Module Bay等を前提にし、複数回の転生を経て突破する設計を狙う。
-4. 1ステージ5分は長く感じる。待ち時間を難易度にせず、必要なら×8までfast-forward可能にしたい。
-5. Moduleの手動付け替え機能自体は存在するが、STATUS内の「BAY 1 / BAY 2」ボタンでは装備操作だと発見しづらい。
+本作で必要なのは反射神経や精密な最適化ではなく、**多少操作が遅れても数字が育ち、失敗しても次回は確実に強くなり、そのうち壁を越えられそうだと感じる進捗**である。
 
-## Current-state diagnosis
+### Confirmed implementation issues
 
-### 1. Duration is fighting the desired difficulty curve
+- `restart()` は `E.restart()` で新cycleを作るため内部speedは1へ戻るが、速度buttonのactive classを同期しない。よって「表示×4 / 実体×1」が起こる。再建時は×1固定のまま、UIも必ず×1へ同期する。
+- STATUSは現在overlayを開くだけでtick停止条件に入らない。STATUS / LOADOUTはHELP同様にclock-halted planning spaceへ変更し、manual pause provenanceを保持する。
+- Era first-clearでは現行1 Patentを一回だけ付与するが、成功画面にADVANCEとREBUILD CURRENT ERAが同居する。通常進行はCLEAR後one-way ADVANCEへ整理する。
 
-現行Era durationは300 / 360 / 420 / 480 / 540 / 600 / 720 game-sec。後半ほどTargetが高い一方で、攻略時間も5分→12分へ増えている。
+## Product stance
 
-本作の原則は「待つことを難易度にしない」なので、後半の難しさは長い待ち時間ではなく、必要な恒久強化・投資判断・buildへ寄せる。
+### 1. Low decision density is acceptable
 
-### 2. Target curve is not sufficiently convex after normalization
+設備ごとに「ここをUPGRADEすればよい」が比較的明白でも問題としない。判断を増やすためだけに複雑なbuild puzzleを足さない。
 
-engineのeraScaleは `2.45^(era-1)`。final targetをこのscaleで割ると概ね次になる。
+ゲームの快感は、
 
-- Era 1: 52.0
-- Era 2: 126.5
-- Era 3: 149.9
-- Era 4: 217.6
-- Era 5: 319.2
-- Era 6: 322.9
-- Era 7: 434.7
+`credits accumulate → upgrades become affordable → line throughput rises → retained strength accumulates → eventually the wall breaks`
 
-Era 5→6はほぼ横ばいで、さらにEra durationが540→600秒へ伸びるため、「後半ほど急になる」体験と一致しにくい。
+という蓄積に置く。
 
-### 3. Early salvage is below the first meaningful purchase
+### 2. Reaction speed is not difficulty
 
-現行salvageは概ね `2 + 2*cleared checkpoints + progress term + era bonus`。序盤でcheckpointを取れず低〜中progressの失敗では2〜4 BP程度になり得る一方、最安の恒久強化はSTARTING CAPITAL 6 BP、CORE EFFICIENCYは8 BP。
+1 game-secごとにcurrent bottleneckへ即投資するbotは上限性能・破綻検出用に限定する。主balance oracleは、数秒〜十数秒単位で画面を見る人間を模したproxyにする。
 
-よって最初の失敗が「何も買えず、ほぼ同じrunをもう一度」になりやすい。
+Human proxyは、
 
-### 4. Existing progression bot is too perfect as the primary balance oracle
+- 7〜12 game-sec程度のjitter付き判断間隔
+- その時点で貯まったCreditsをまとめて投資
+- bottleneckは概ね追うが常時最速ではない
+- Overclockはchargeを毎回最速消費しない
+- Module手動最適化を序盤必須にしない
 
-現行 `progression-balance.test.js` は1 game-secごとに判断し、常にcurrent bottleneckへ投資し、Overclockも利用する。これは上限性能の検証には良いが、普通の人間が数秒おきに画面を見て判断するプレイ感を十分表さない。
+を基準候補とする。
 
-### 5. Module equip exists but affordance is weak
+さらに12〜20 game-sec程度のlow-attention proxyを置き、初心者余裕度を見る。
 
-engineには `equipModule(state, uid, bayIndex)` があり、装備中Moduleとのswapも可能。STATUS / LOADOUTには在庫ごとのBAYボタンがあるが、「BAY 1」というラベルだけでは「ここへ装備 / 交換する」という動詞が不足している。
+### 3. Short stages, convex retained-strength requirement
 
-## Revised balance goals
+後半を難しくするためにdeadlineを長くしない。durationは現行300〜720 game-secから圧縮し、概ね数分の範囲へ収める。
 
-### A. Early game: first-attempt clearable
+Era difficultyは必要なretained strengthを凸状にする。
 
-「初期状態で必ず勝つ」ではなく、**失敗周回を前提条件にしない**ことを狙う。
+- Era 1: fresh state + ordinary attentive playでほぼ突破
+- Era 2: Era 1 first-clear routeからそのまま突破可能
+- Era 3: freshでは境界。初めて転生価値を感じる
+- Era 4〜5: 数回のrebuild / retained progressを明確に要求
+- Era 6〜7: 十分な長期progressを前提にする最終壁
 
-- Era 1: ちゃんとボトルネックへ投資するattentive-human proxyなら、恒久強化ゼロで原則first-attempt clear可能。
-- Era 2: Era 1をfirst-attempt clearした通常ルートでもfirst-attempt clear可能。Blueprintを使えばさらに余裕が出るが、失敗転生を必須にしない。
-- ランダムModuleの下振れだけでEra 1〜2を落とさない。
+## Prestige 2.0 proposal
 
-### B. Mid/late game: retained progress becomes increasingly necessary
+現行Blueprintは「貯める → cost 6/8等の閾値に届く → 初めて強くなる」というchunky構造で、閾値未満の失敗runが前回とほぼ同じになりやすい。
 
-- Era 3: fresh-metaでも上手いplayなら境界。初めて転生の価値を強く感じ始める。
-- Era 4: いくつかの恒久強化を持つことを想定。
-- Era 5: Blueprint build + Patent + Module運用を明確に要求。
-- Era 6: normal routeで蓄積した恒久強化なしではかなり厳しい。
-- Era 7: それまでの複数回の転生・強化を前提とする最終壁。ランダム神引きだけで恒久進行を飛ばせない。
+これを二層に作り直す。
 
-難易度は「時間が長い」ではなく、required retained strengthがEraごとに凸状に増えることで作る。
+### Layer A — cumulative Foundry Memory / Knowledge
 
-### C. Failure must buy visible forward progress
+仮称。**非消費の累積値**で、meaningfulな各cycleから必ず増える。
 
-序盤failure rewardの目標band:
+- final targetへのprogress
+- cleared checkpoints
+- run中に蓄積したArchive / Research
+- Era係数
 
-- ほぼ何もしないrun: 2〜4 BP程度
-- final target 25〜40%まで進めたmeaningful failure: 6〜8 BP
-- 50〜75%: 8〜12 BP
-- near miss: 12〜16 BP
+から獲得量を決める。
 
-少なくとも「ある程度ちゃんと遊んだ最初の失敗」では、STARTING CAPITAL等の最初の恒久強化を1つ買える可能性を高くする。
+Memory自体が小さなretained bonusへ連続的に効く。候補はall-capacity、starting credits等。式はsimulationでfitし、線形暴走を避ける。
 
-成功時の報酬も過剰にならないよう、failureだけでなく全体のBlueprint economyとして再simulationする。
+重要なのは、meaningful failure後の次runで必ずbefore→after差が出ること。
 
-### D. Shorter stages; difficulty must not come from waiting
+### Layer B — Breakthrough thresholds
 
-初期案としてEra durationを次の範囲へ圧縮してsimulationする。
+Memoryが一定値へ達すると大きな進歩を獲得する。
 
-`180 / 200 / 220 / 240 / 260 / 280 / 300 game-sec`
+候補:
 
-つまり×1でも約3〜5分、後半まで極端に長くしない。最終値はbalance simulationで決める。
+- Blueprint unlock / Blueprint Point
+- Automation tier
+- Module Bay
+- larger starting-capital step
+- new retained passive
 
-Module spawn / pity、Automation cadence、checkpoint timings、Overclock recharge等は絶対秒だけを個別に短縮せず、新durationでも意図したイベント密度になるよう一緒に再調整する。
+これにより「毎runの小進捗」と「数runに一度の大進捗」を同時に作る。
 
-### E. ×8 is a fast-forward feature, not a difficulty modifier
+PatentはEra first-clearの一回限りmilestone rewardとして別系統で残す方向を第一候補とする。
 
-×8は次のgateをすべて満たした場合に追加する。
+### Save migration
 
-- ×1 / ×2 / ×4 / ×8で同じgame-timeに対するsimulation outcomeが一致する。
-- checkpoint evaluation、Module draw/pity、Automation、Overclock recharge/durationにevent skipがない。
-- save/reload境界でspeedによる差が出ない。
-- browserでframe stallや入力破綻が発生しない。
-- ×8時に人間へ8倍のクリックを強制しない。Pause、banked Overclock、Automation等でfast-forwardとして成立する。
+現行saveのunspent Blueprint、購入済みEfficiency / Capital / Automation / Module Bayを失わせない。
 
-問題が出る場合は×8を無理に公開せず、engine advance側を先に直す。
+新schema導入時は、
 
-## Human-like balance agents
+- 所持BP
+- 過去に購入へ使ったBP相当
+- Patent / Patent upgrade
+- completed Era
 
-次回のsimulationでは現在の1秒decision botだけでなく、少なくとも3種類を持つ。
+から新Memory / Breakthrough進捗へ公平に換算するmigration testを持つ。
 
-1. **Optimal proxy** — 1 game-secごとに投資判断。上限性能・破綻検出用。
-2. **Attentive human proxy** — 3 game-sec程度ごとに判断。bottleneckは追うが完全最適ではない。主balance oracle。
-3. **Relaxed human proxy** — 5〜6 game-sec程度ごとに判断し、Overclock timingや投資を少し逃す。初心者余裕度を見る。
+## In-run action for future progression
 
-必要ならModule manual optimizationの有無も分ける。
+低頻度の `RESEARCH / SALVAGE FOCUS` を第一候補とする。
 
-検証したい性質:
+目的は「このrunは厳しそう」と感じた時にも、現在runを将来progressへ変換できること。
 
-- Attentive proxyはEra 1〜2を失敗前提にしない。
-- Relaxed proxyでもEra 1が理不尽な即壁にならない。
-- fresh-metaを直接Era 5〜7へ置いた場合は、上手いproxyでも突破困難になる。
-- normal routeでは転生と恒久強化を重ねることで全seedが最終クリアへ収束する。
-- RNG下振れだけで長期間停滞しない。
+初期案:
 
-現行のending到達p50約15 cyclesより多少多くなってよい。runが短くなるため、目安としてp50 18〜26 cycles程度を探索し、実時間総量・反復操作量と合わせて判断する。これは固定acceptanceではなく初期探索band。
+- OFF / FOCUSの単純toggle、または少数段階
+- ON中はgenerated Creditsの一部をArchive Dataへdivertする
+- current clearは少し難しくなる
+- cycle終了時のMemory獲得が増える
+- 画面上で `NEXT REBUILD +X MEMORY` のforecastを常時見せる
 
-## Module loadout UX rework
+頻繁な切替やクリック連打を最適解にしない。割合・変換式はM11 simulationで決める。
 
-Drag & Dropはmobile/accessibility上の主操作にしない。既存のexplicit button方式を分かる形へする。
+## Status / Loadout behavior
 
-### Main screen
+STATUS / LOADOUTは安全なplanning spaceにする。
 
-- `MODULE RECOVERED` cardを明確に `MANAGE LOADOUT` 導線として扱う。
-- 必要なら上部 `STATUS` を `STATUS / LOADOUT` へ変更する。
+- running中に開いた場合だけauto-pause
+- close時はSTATUSがpauseした場合だけresume
+- manual pause中に開いて閉じてもmanual pause維持
+- cycle ended時はresumeしない
+- overlayに `CLOCK HALTED` を明示
 
-### STATUS / LOADOUT
+Module UI:
 
-- 各Bay: `BAY 1 // EQUIPPED`、Module名、効果、`REPLACE` のように状態と動詞を表示。
-- Inventory: `STORED` / `EQUIPPED · BAY N` を明示。
-- Action labelを単なる `BAY 1` から `EQUIP → BAY 1` / `SWAP → BAY 2` へ変更。
-- 装備前previewを `LINE 42.1 → 45.7 /s (+8.6%)` のように読むだけで意味が分かる形へする。
-- whole-line throughputが下がる手動swapは許可してよいが、negative previewを明示する。安全なauto-equipは引き続き悪化swapを拒否する。
-- Helpへ「Moduleの付け替え方」を追加。
+- `STATUS` → `STATUS / LOADOUT`
+- `BAY 1` → `EQUIP → BAY 1`
+- occupied bayへは `SWAP → BAY N`
+- current itemは `EQUIPPED · BAY N`
+- previewは `LINE 42.1 → 45.7 /s (+8.6%)`
+- negative manual swapは許可してもよいが警告表示
+- auto-equipはwhole-line throughput悪化swapを引き続き拒否
+- mobile/keyboardでbutton方式を主操作にし、drag & dropを必須にしない
 
-## Implementation order
+## Era clear flow
 
-### Phase 1 — Balance instrumentation
+CLEAR後に同じEraを再選択することを通常導線から外す。
 
-- human-like proxy追加
-- Era別first-attempt / repeated-attempt / fresh-meta / normal-route metricsを出す
-- speed ×8 determinism stress fixtureを準備
+- Failure: `REBUILD ERA N`
+- Success Era 1〜6: `ADVANCE TO ERA N+1`
+- first-clear rewardは `FIRST CLEAR // +1 PATENT` 等と明示
+- 過去EraはEra rail / archiveで `CLEARED / ARCHIVED` と見える
+- hidden replay routeは作らない
 
-数値を触る前に、何を良いbalanceと判定するかをtestへ落とす。
+過去Era farmを前提にしないため、late difficultyはcurrent Eraでのrebuildとretained progressionだけで突破できるようfitする。
 
-### Phase 2 — Early momentum + duration curve
+## Speed
 
-- salvage reward再設計
-- Era duration短縮
-- checkpoint / Module / Automation / Overclock timing再調整
-- Era 1〜2 targetをhuman proxy基準で再fit
+再建は内部・UIとも必ず×1へ戻す。
 
-### Phase 3 — Convex late difficulty
+×8はbalance救済ではなくfast-forward option。
 
-- Era 3〜7 target curveを再fit
-- fresh-meta vs accumulated-metaのgapを検証
-- Blueprint / Patent購入順によるdead buildや詰みを監査
-- RNG stressを増やす
+公開gate:
 
-### Phase 4 — Module loadout discoverability
+- ×1/×2/×4/×8で同game-time outcomeが一致
+- checkpoint evaluation skipなし
+- Module spawn/pity skipなし
+- Automation cadence skipなし
+- Overclock recharge/duration破綻なし
+- save/reloadでspeed state矛盾なし
+- browser frame stall / input破綻なし
 
-- main導線
-- explicit EQUIP / SWAP verbs
-- line throughput preview
-- mobile / keyboard QA
+balanceは×8で最速操作できることを前提にしない。
 
-### Phase 5 — ×8 + release QA
+## Milestones
 
-- ×8 determinism / event density / save persistence
-- browser interaction at ×1/×4/×8
-- exact full npm test
-- desktop 1440x1000 / mobile 390x844 / narrow 360x800 render QA
-- screenshotsと実操作でbalance-related UIを目視
+### M10 — Human balance contract / correctness baseline
+
+1. optimal 1s botをupper-bound扱いに変更
+2. attentive human proxy（jitter 7〜12s）追加
+3. low-attention proxy（12〜20s）追加
+4. Era別first-attempt clear率、failure ratio、cycle数、操作回数をbaseline化
+5. restart speed UI bug修正
+6. STATUS pause provenanceをcontract化
+
+### M11 — Prestige 2.0
+
+1. Memory + Breakthrough二層progressionを数理設計
+2. meaningful failure後に必ず小さなretained gain
+3. 数runに一度のBreakthrough
+4. Research / Salvage Focus実装
+5. old save migration
+6. result / rebuild before→after表示更新
+
+### M12 — Era duration / convex difficulty
+
+1. duration短縮
+2. checkpoint / Module / Automation / Overclock timing一括再fit
+3. Era 1〜2 first-attempt clearable
+4. Era 3〜7 retained-strength requirementを凸化
+5. RNG下振れstress
+6. repeated rebuildで全seedが収束することを確認
+
+### M13 — Loadout / Status / Era flow UX
+
+1. STATUS auto-pause
+2. Module EQUIP/SWAP discoverability
+3. whole-line preview
+4. one-way Era ADVANCE
+5. first-clear reward説明
+6. mobile / keyboard QA
+
+### M14 — ×8 fast-forward
+
+1. engine acceptance
+2. save schema acceptance
+3. interaction density確認
+4. ×1/2/4/8 determinism stress
+
+### M15 — Integrated playtest / release
+
+1. simulationだけでなくbrowser相当の序盤・中盤rebuildを実操作
+2. 「負けても次は強い」「数字が伸びてそのうち越せそう」を目視・操作で監査
+3. exact full tests
+4. 1440×1000 / 390×844 / 360×800 browser QA
+5. screenshots / save migration / pause / speed regression監査
+6. all PASS後のみmain / Pages release
+
+## Acceptance direction
+
+M10のbaseline後に閾値はfitするが、方向として以下を要求する。
+
+- Era 1はattentive human proxyでseed依存の理不尽なfailureをほぼ排除
+- Era 2もfailure prestigeを前提条件にしない
+- Module最適swap、Overclock最速押下、秒単位のUPGRADE反応をEra 1〜2の必須条件にしない
+- meaningful failure 1回ごとに次runの基礎strengthが必ず変わる
+- midgameで同じ見た目のrunを何度も繰り返させず、小進捗forecastとBreakthrough残量を見せる
+- late Eraはfresh-metaでは明確に壁、normal progressionでは複数rebuildで必ず近づく
+- difficulty増加をrun時間増加で代替しない
 
 ## Release policy
 
-通常開発は`develop`。balance調整中は`main` / Pagesを変更しない。
-
-数理testがPASSしただけではreleaseしない。simulationは人間プレイのproxyに過ぎないため、最終的には少なくとも序盤数周を実browser相当で操作し、
-
-- failure後に「もう一周やれば進める」と感じられるか
-- Era 1〜2がサクサク進むか
-- Era 4以降で恒久成長が必要になる感覚があるか
-- Module付け替えを説明なしで発見できるか
-- ×8が単なる忙しさ増幅になっていないか
-
-を確認してからmainへreleaseする。
+通常開発は`develop`。数理testだけで公開判定しない。human-like simulation + browser interaction + exact render QAを通し、全gate PASS後のみ`main`へreleaseする。
