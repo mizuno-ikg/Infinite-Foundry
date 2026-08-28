@@ -71,6 +71,13 @@ const P=install(E);
   assert(s.cycle.modules.length>=3,'Breakthrough module bay must be effective in the run');
 }
 {
+  const final=P.BREAKTHROUGHS.find(x=>x.id==='capital-III');
+  assert(final&&final.threshold===130,'Final M11 breakthrough should be reachable in the late-game catch-up window');
+  const m=E.baseMeta(111);m.foundryMemory=130;
+  const s=E.createState(m);
+  assert(s.meta.upgrades.capital>=3,'RECURSIVE CAPITAL must apply its capital floor at 130 Memory');
+}
+{
   const legacy=E.createState(E.baseMeta(12));
   delete legacy.meta.foundryMemory;delete legacy.meta.memorySchemaVersion;
   legacy.meta.blueprints=10;legacy.meta.upgrades.efficiency=1;
