@@ -91,7 +91,7 @@
     const era=E.currentEra(state),target=E.directivesFor(state).slice(-1)[0]?.target||1;
     const ratio=Math.max(0,Math.min(1,E.sustainedAverage(state,30)/target));
     const clears=(state.cycle.checkpointResults||[]).filter(x=>x.clear).length;
-    const research=Math.min(8,Math.floor(Math.max(0,Number(state.cycle.researchData)||0)));
+    const research=Math.min(4,Math.floor(Math.max(0,Number(state.cycle.researchData)||0)/2));
     const win=state.cycle.result?.win?2:0;
     return 1+Math.floor(2*Math.sqrt(ratio))+clears+Math.floor(Math.max(0,era.id-1)/2)+research+win;
   }
@@ -124,7 +124,7 @@
   function researchFromProduction(state,produced){
     const target=E.directivesFor(state).slice(-1)[0]?.target||1;
     const diverted=Math.max(0,Number(produced)||0)*0.18;
-    const unit=Math.max(1e-9,target*15*0.18);
+    const unit=Math.max(1e-9,target*30*0.18);
     return {diverted,data:diverted/unit};
   }
 
