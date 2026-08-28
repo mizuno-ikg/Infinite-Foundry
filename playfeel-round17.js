@@ -40,7 +40,9 @@
     return out;
   };
 
-  const next=document.createElement('script');
-  next.src='playfeel-round18.js';
-  document.head.append(next);
+  if(typeof document!=='undefined'){
+    const next=document.createElement('script');
+    next.src='playfeel-round18.js';
+    document.head.append(next);
+  }
 })();
