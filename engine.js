@@ -7,13 +7,13 @@
 
   const VERSION=5, STEP=0.05;
   const ERA_DEFS={
-    1:{id:1,key:'workshop',name:'WORKSHOP',site:'Ember Bay',theme:'ember',duration:300,focus:'Foundational bottlenecks',directive:'FORGE A VIABLE LINE',targets:[4,14,30,52],stageBias:{},rewardPatents:1},
-    2:{id:2,key:'automated-factory',name:'AUTOMATED FACTORY',site:'Servo District',theme:'electric',duration:360,focus:'Power, automation, module builds',directive:'SUSTAIN AUTONOMOUS OUTPUT',targets:[20,72,165,310],stageBias:{power:0.78,transfer:0.90},rewardPatents:1},
-    3:{id:3,key:'industrial-city',name:'INDUSTRIAL CITY',site:'Iron Meridian',theme:'city',duration:420,focus:'District logistics',directive:'FEED THE INDUSTRIAL GRID',targets:[59,214,481,900],stageBias:{transfer:0.72,assembly:0.88},rewardPatents:1},
-    4:{id:4,key:'planetary-foundry',name:'PLANETARY FOUNDRY',site:'Atlas Crustworks',theme:'planet',duration:480,focus:'Continental supply and orbit',directive:'INDUSTRIALIZE THE PLANET',targets:[205,756,1670,3200],stageBias:{source:0.76,transfer:0.82},rewardPatents:1},
-    5:{id:5,key:'stellar-forge',name:'STELLAR FORGE',site:'Helios Crown',theme:'stellar',duration:540,focus:'Energy capture and thermal stability',directive:'HARNESS A STAR',targets:[700,2640,5800,11500],stageBias:{power:0.62,process:0.82},rewardPatents:1},
-    6:{id:6,key:'law-foundry',name:'LAW FOUNDRY',site:'Causality Lattice',theme:'law',duration:600,focus:'Interdependent physical constants',directive:'FABRICATE STABLE LAW',targets:[1840,6860,15200,28500],stageBias:{process:0.74,assembly:0.78,power:0.82},rewardPatents:1},
-    7:{id:7,key:'universe-foundry',name:'UNIVERSE FOUNDRY',site:'Genesis Frame',theme:'universe',duration:720,focus:'Final integration and universe ignition',directive:'IGNITE A NEW UNIVERSE',targets:[5700,22100,48900,94000],stageBias:{source:0.84,process:0.80,transfer:0.82,assembly:0.76,power:0.78},rewardPatents:1}
+    1:{id:1,key:'workshop',name:'WORKSHOP',site:'Ember Bay',theme:'ember',duration:150,focus:'Foundational bottlenecks',directive:'FORGE A VIABLE LINE',targets:[2.5,5,7,9],stageBias:{},rewardPatents:1},
+    2:{id:2,key:'automated-factory',name:'AUTOMATED FACTORY',site:'Servo District',theme:'electric',duration:165,focus:'Power, automation, module builds',directive:'SUSTAIN AUTONOMOUS OUTPUT',targets:[7,14,21,27],stageBias:{power:0.78,transfer:0.90},rewardPatents:1},
+    3:{id:3,key:'industrial-city',name:'INDUSTRIAL CITY',site:'Iron Meridian',theme:'city',duration:180,focus:'District logistics',directive:'FEED THE INDUSTRIAL GRID',targets:[29,58,86,115],stageBias:{transfer:0.72,assembly:0.88},rewardPatents:1},
+    4:{id:4,key:'planetary-foundry',name:'PLANETARY FOUNDRY',site:'Atlas Crustworks',theme:'planet',duration:195,focus:'Continental supply and orbit',directive:'INDUSTRIALIZE THE PLANET',targets:[80,160,240,320],stageBias:{source:0.76,transfer:0.82},rewardPatents:1},
+    5:{id:5,key:'stellar-forge',name:'STELLAR FORGE',site:'Helios Crown',theme:'stellar',duration:210,focus:'Energy capture and thermal stability',directive:'HARNESS A STAR',targets:[250,500,750,1000],stageBias:{power:0.62,process:0.82},rewardPatents:1},
+    6:{id:6,key:'law-foundry',name:'LAW FOUNDRY',site:'Causality Lattice',theme:'law',duration:225,focus:'Interdependent physical constants',directive:'FABRICATE STABLE LAW',targets:[750,1500,2250,3000],stageBias:{process:0.74,assembly:0.78,power:0.82},rewardPatents:1},
+    7:{id:7,key:'universe-foundry',name:'UNIVERSE FOUNDRY',site:'Genesis Frame',theme:'universe',duration:240,focus:'Final integration and universe ignition',directive:'IGNITE A NEW UNIVERSE',targets:[2250,4500,6750,9000],stageBias:{source:0.84,process:0.80,transfer:0.82,assembly:0.76,power:0.78},rewardPatents:1}
   };
   const STAGE_DEFS={
     source:{name:'SOURCE',base:1.2,cost:8,costGrowth:1.18,growth:1.11},
@@ -46,7 +46,7 @@
     meta=meta?JSON.parse(JSON.stringify(meta)):baseMeta(Date.now());
     normalizeMeta(meta);
     let e=upgradeEffects(meta);
-    let state={version:VERSION,meta,cycle:{time:0,accumulator:0,credits:e.startCredits*eraScale(meta),levels:{source:0,process:0,transfer:0,assembly:0,power:0},speed:1,overclockUntil:0,overclockReady:0,nextModuleAt:0,modulePityAt:0,modules:Array(e.moduleSlots).fill(null),moduleInventory:[],nextModuleSerial:1,throughputSamples:[],output:0,ended:false,result:null,checkpointResults:[],lastCheckpointIndex:-1,rngState:hashSeed(meta.seed,meta.cycle,meta.era),events:[],nextEventSeq:1,automationCheckAt:Math.max(75,currentEra(meta).duration*.25)}};
+    let state={version:VERSION,meta,cycle:{time:0,accumulator:0,credits:e.startCredits*eraScale(meta),levels:{source:0,process:0,transfer:0,assembly:0,power:0},speed:1,overclockUntil:0,overclockReady:0,nextModuleAt:0,modulePityAt:0,modules:Array(e.moduleSlots).fill(null),moduleInventory:[],nextModuleSerial:1,throughputSamples:[],output:0,ended:false,result:null,checkpointResults:[],lastCheckpointIndex:-1,rngState:hashSeed(meta.seed,meta.cycle,meta.era),events:[],nextEventSeq:1,automationCheckAt:Math.max(30,currentEra(meta).duration*.18)}};
     emitEvent(state,'cycleStarted',{cycle:meta.cycle,era:meta.era});
     return state;
   }
@@ -62,7 +62,7 @@
   function canUpgrade(state,id){return !state.cycle.ended&&state.cycle.credits+1e-9>=cost(state,id)}
   function upgrade(state,id){if(!STAGE_DEFS[id]||!canUpgrade(state,id))return false;state.cycle.credits-=cost(state,id);state.cycle.levels[id]++;return true}
   function pulse(state){if(state.cycle.ended||state.cycle.time+1e-9<state.cycle.overclockReady)return false;let target=rawBottleneck(state);state.cycle.overclockUntil=state.cycle.time+4;state.cycle.overclockReady=state.cycle.time+12;emitEvent(state,'overclock',{stage:target});return true}
-  function scheduleFirstModule(state){if(state.cycle.nextModuleAt>0)return;let era=currentEra(state);state.cycle.nextModuleAt=24+rngFor(state)*(24+era.id*2);state.cycle.modulePityAt=70+era.id*5}
+  function scheduleFirstModule(state){if(state.cycle.nextModuleAt>0)return;let era=currentEra(state);state.cycle.nextModuleAt=era.duration*(.10+rngFor(state)*.08);state.cycle.modulePityAt=era.duration*.34}
   function bestAutomaticModulePlacement(state,m){
     const slots=upgradeEffects(state.meta).moduleSlots;
     while(state.cycle.modules.length<slots)state.cycle.modules.push(null);
@@ -84,8 +84,7 @@
       state.cycle.modules[bay]=cloneModule(m);
     }
     if(!state.meta.discoveredModules.includes(m.id))state.meta.discoveredModules.push(m.id);
-    state.cycle.nextModuleAt=state.cycle.time+26+rngFor(state)*(28+currentEra(state).id*2);
-    state.cycle.modulePityAt=state.cycle.time+78+currentEra(state).id*4;
+    state.cycle.nextModuleAt=state.cycle.time+currentEra(state).duration*(.12+rngFor(state)*.10);state.cycle.modulePityAt=state.cycle.time+currentEra(state).duration*.36;
     emitEvent(state,'moduleRecovered',{moduleUid:m.uid,moduleId:m.id,name:m.name,rarity:m.rarity,effect:m.effect,target:m.target,action,bay,replaced,replacedName});
     return m;
   }
@@ -106,7 +105,7 @@
   function sustainedAverage(state,seconds=30){let cutoff=Math.max(0,state.cycle.time-seconds),s=state.cycle.throughputSamples.filter(x=>x.t>=cutoff);if(!s.length)return throughput(state);let weighted=0,total=0;for(let i=1;i<s.length;i++){let dt=s[i].t-s[i-1].t;weighted+=s[i-1].v*dt;total+=dt}return total>0?weighted/total:s[s.length-1].v}
   function salvageBlueprints(state){let dirs=directivesFor(state),cleared=state.cycle.checkpointResults.filter(x=>x.clear).length,ratio=Math.min(1,sustainedAverage(state,30)/dirs[3].target),eraBonus=Math.max(0,currentEra(state).id-1),e=upgradeEffects(state.meta);return 2+2*cleared+Math.floor(3*Math.sqrt(Math.max(0,ratio)))+eraBonus+e.salvageBonus}
   function evaluateCheckpoints(state){let dirs=directivesFor(state);while(state.cycle.lastCheckpointIndex+1<dirs.length&&state.cycle.time+1e-9>=dirs[state.cycle.lastCheckpointIndex+1].t){let i=++state.cycle.lastCheckpointIndex,d=dirs[i],v=i===dirs.length-1?sustainedAverage(state,30):throughput(state),clear=v+1e-9>=d.target;state.cycle.checkpointResults.push({index:i,time:d.t,target:d.target,value:v,clear});emitEvent(state,'directiveEvaluated',{index:i,label:d.label,target:d.target,value:v,clear})}}
-  function runAutomation(state){let lv=state.meta.upgrades.automation;if(lv<=0||state.cycle.ended)return;while(state.cycle.time+1e-9>=state.cycle.automationCheckAt){let threshold=[Infinity,1.8,1.5,1.3][Math.min(3,lv)]||1.3,id=rawBottleneck(state),c=cost(state,id);if(state.cycle.credits+1e-9>=c*threshold&&upgrade(state,id))emitEvent(state,'automationUpgrade',{stage:id,level:state.cycle.levels[id],cost:c});state.cycle.automationCheckAt+=10}}
+  function runAutomation(state){let lv=state.meta.upgrades.automation;if(lv<=0||state.cycle.ended)return;while(state.cycle.time+1e-9>=state.cycle.automationCheckAt){let threshold=[Infinity,1.8,1.5,1.3][Math.min(3,lv)]||1.3,id=rawBottleneck(state),c=cost(state,id);if(state.cycle.credits+1e-9>=c*threshold&&upgrade(state,id))emitEvent(state,'automationUpgrade',{stage:id,level:state.cycle.levels[id],cost:c});state.cycle.automationCheckAt+=Math.max(8,currentEra(state).duration*.05)}}
   function finishCycle(state){if(state.cycle.ended)return;let dirs=directivesFor(state),avg=sustainedAverage(state,30),win=avg+1e-9>=dirs[3].target,bp=salvageBlueprints(state);state.cycle.ended=true;state.cycle.result={win,average:avg,blueprintsEarned:bp,eraCompleted:false,patentsEarned:0,finalBottleneck:rawBottleneck(state)};state.meta.blueprints+=bp;state.meta.bestThroughput=Math.max(state.meta.bestThroughput,avg);state.meta.totalOutput+=state.cycle.output;if(win){state.meta.successfulCycles++;let era=currentEra(state);if(!state.meta.completedEras.includes(era.id)){state.meta.completedEras.push(era.id);state.meta.patents+=era.rewardPatents;state.cycle.result.eraCompleted=true;state.cycle.result.patentsEarned=era.rewardPatents;emitEvent(state,'eraCompleted',{era:era.id,patentsEarned:era.rewardPatents});if(era.id===7)state.meta.endingUnlocked=true}}emitEvent(state,'cycleEnded',{win,average:avg,blueprintsEarned:bp,era:state.meta.era,finalBottleneck:state.cycle.result.finalBottleneck})}
   function step(state,dt=STEP){if(state.cycle.ended)return;scheduleFirstModule(state);let deadline=currentEra(state).duration,end=Math.min(deadline,state.cycle.time+dt),actual=end-state.cycle.time;if(actual<=0){finishCycle(state);return}let tp=throughput(state);state.cycle.credits+=tp*actual;state.cycle.output+=tp*actual;state.cycle.time=end;state.cycle.throughputSamples.push({t:state.cycle.time,v:tp});while(state.cycle.throughputSamples.length>1000)state.cycle.throughputSamples.shift();if(state.cycle.time+1e-9>=state.cycle.nextModuleAt||state.cycle.time+1e-9>=state.cycle.modulePityAt)drawModule(state);runAutomation(state);evaluateCheckpoints(state);if(state.cycle.time+1e-9>=deadline)finishCycle(state)}
   function advance(state,gameSeconds){let total=state.cycle.accumulator+Math.max(0,gameSeconds),n=Math.floor(total/STEP+1e-9);state.cycle.accumulator=total-n*STEP;for(let i=0;i<n&&!state.cycle.ended;i++)step(state,STEP);return n}
@@ -134,7 +133,7 @@
     if(!c.levels)c.levels={};for(const id of Object.keys(STAGE_DEFS))if(!Number.isFinite(c.levels[id]))c.levels[id]=0;
     if(!Array.isArray(c.throughputSamples))c.throughputSamples=[];if(!Array.isArray(c.checkpointResults))c.checkpointResults=[];
     if(!Array.isArray(c.events))c.events=[];let maxSeq=c.events.reduce((m,e)=>Math.max(m,Number(e.seq)||0),0);c.nextEventSeq=Math.max(Number(c.nextEventSeq)||1,maxSeq+1);
-    if(!Number.isFinite(c.automationCheckAt))c.automationCheckAt=Math.max(75,currentEra(s).duration*.25);if(!Number.isFinite(c.rngState))c.rngState=hashSeed(s.meta.seed,s.meta.cycle,s.meta.era);
+    if(!Number.isFinite(c.automationCheckAt))c.automationCheckAt=Math.max(30,currentEra(s).duration*.18);if(!Number.isFinite(c.rngState))c.rngState=hashSeed(s.meta.seed,s.meta.cycle,s.meta.era);
     if(!Array.isArray(c.modules))c.modules=[];
     let serial=1;
     c.modules=c.modules.map((m,i)=>{if(!m)return null;const out={...m};if(!out.uid)out.uid=`C${s.meta.cycle}-L${i+1}`;serial=Math.max(serial,i+2);return out});
