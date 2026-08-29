@@ -53,6 +53,7 @@ assert(m14.includes('Engine.deserialize already normalizes')||m14.includes('Engi
 assert(m14.includes('x8Removed:true'),'browser compatibility layer must expose the M14 removal decision');
 assert(!m14.includes("eightButton.dataset.speed='8'"),'browser layer must not create an x8 control');
 assert(!m14.includes('requested===8?4'),'browser layer must not override the engine with a second x8 migration rule');
+assert(m14.includes("formatDuration(E.currentEra(state).duration)"),'shipping layer must render shortened Era deadlines with real mm:ss precision');
 assert(!html.includes('data-speed="8"'),'shipping markup must not expose x8');
 assert(html.includes('<script src="m14-fast-forward.js"></script>'),'shipping cleanup layer must remain loaded');
 console.log('m14-fast-forward-contract: PASS');
