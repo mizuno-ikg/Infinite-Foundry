@@ -12,7 +12,8 @@ const DEFAULTS={
   minDensityRatio:0.45,
   maxCyclePenalty:1.25,
   maxFinishRateDrop:0.15,
-  maxLateReachDrop:0.15
+  maxLateReachDrop:0.15,
+  minX8UseRate:0.5
 };
 
 function median(values){
@@ -41,9 +42,10 @@ function evaluatePair(base,eight,opts={}){
   const buyDensityRatio=ratio(eight.buysPerRealMinuteP50,base.buysPerRealMinuteP50);
   const cycleRatio=ratio(eight.cyclesP50,base.cyclesP50);
   const finishRateDrop=base.finishRate-eight.finishRate;
-  const lateReachDrop=median((base.lateReachedRate||[1,1,1]).map((v,i)=>v-(eight.lateReachedRate||[1,1,1])[i]));
+  const lateReachDrops=(base.lateReachedRate||[1,1,1]).map((v,i)=>v-(eight.lateReachedRate||[1,1,1])[i]);
+  const lateReachDrop=Math.max(...lateReachDrops);
   const checks={
-    x8ActuallyUsed:eight.x8UseRate>0,
+    x8ActuallyUsed:eight.x8UseRate>=cfg.minX8UseRate&&eight.x8CyclesP50>0,
     decisionDensity:densityRatio>=cfg.minDensityRatio&&densityRatio<=cfg.maxDensityRatio,
     buyDensity:buyDensityRatio>=cfg.minDensityRatio&&buyDensityRatio<=cfg.maxDensityRatio,
     cyclePenalty:cycleRatio<=cfg.maxCyclePenalty,
@@ -53,7 +55,7 @@ function evaluatePair(base,eight,opts={}){
   return {
     pass:Object.values(checks).every(Boolean),
     checks,
-    metrics:{densityRatio,buyDensityRatio,cycleRatio,finishRateDrop,lateReachDrop,x8UseRate:eight.x8UseRate,x8CyclesP50:eight.x8CyclesP50}
+    metrics:{densityRatio,buyDensityRatio,cycleRatio,finishRateDrop,lateReachDrop,lateReachDrops,x8UseRate:eight.x8UseRate,x8CyclesP50:eight.x8CyclesP50}
   };
 }
 
