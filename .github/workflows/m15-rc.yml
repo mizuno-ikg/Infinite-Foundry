@@ -37,4 +37,4 @@ jobs:
           path: qa-browser/
           if-no-files-found: warn
           retention-days: 7
-      # One-shot M15 gate; final independent acceptance rerun after audit regressions were repaired.
+      # One-shot M15 gate; final publication-acceptance rerun after all audit fixes.
