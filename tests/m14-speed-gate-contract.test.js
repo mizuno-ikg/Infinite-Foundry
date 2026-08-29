@@ -25,13 +25,15 @@ const healthy={
 };
 const badDensity={...healthy,decisionsPerRealMinuteP50:25};
 const badOutcome={...healthy,cyclesP50:30,finishRate:.5};
-const badReach={...healthy,lateReachedRate:[.7,.5,.3]};
+const badReach={...healthy,lateReachedRate:[1,.85,.5]};
+const rareX8={...healthy,x8UseRate:.25,x8CyclesP50:0};
 const locked={...healthy,x8UseRate:0,x8CyclesP50:0};
 
 assert.strictEqual(G.evaluatePair(base,healthy).pass,true,'healthy unlocked x8 should pass');
 assert.strictEqual(G.evaluatePair(base,badDensity).checks.decisionDensity,false,'x8 must not require runaway real-time decision density');
 assert.strictEqual(G.evaluatePair(base,badOutcome).pass,false,'large cycle/finish penalties should reject x8');
-assert.strictEqual(G.evaluatePair(base,badReach).checks.lateReach,false,'x8 must not look healthy by simply failing to reach late eras');
+assert.strictEqual(G.evaluatePair(base,badReach).checks.lateReach,false,'a catastrophic drop in any one late era must reject x8 even when the other late eras look healthy');
+assert.strictEqual(G.evaluatePair(base,rareX8).checks.x8ActuallyUsed,false,'gate must reject x8 when only a minority of routes ever use it');
 assert.strictEqual(G.evaluatePair(base,locked).checks.x8ActuallyUsed,false,'gate must reject a comparison where x8 never unlocked');
 
 assert.strictEqual(G.lateEraFit({lateAttemptsP50:[2,4,6],lateReachedRate:[1,.9,.8]}).pass,true);
