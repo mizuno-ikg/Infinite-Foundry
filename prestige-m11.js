@@ -84,7 +84,8 @@
     const ratio=Math.max(0,Math.min(1,E.sustainedAverage(state,30)/target));
     const clears=(state.cycle.checkpointResults||[]).filter(x=>x.clear).length;
     const research=Math.max(0,Number(state.cycle.researchData)||0);
-    return timeRatio>=0.08||ratio>=0.05||clears>0||research>=RESEARCH_MEANINGFUL_THRESHOLD;
+    const progressedEnoughForThroughput=timeRatio>=0.02&&Math.max(0,Number(state.cycle.output)||0)>0;
+    return timeRatio>=0.08||(progressedEnoughForThroughput&&ratio>=0.05)||clears>0||research>=RESEARCH_MEANINGFUL_THRESHOLD;
   }
   function memoryEarned(state){
     if(!meaningful(state))return 0;
