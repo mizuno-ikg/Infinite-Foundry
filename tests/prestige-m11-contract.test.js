@@ -28,6 +28,7 @@ const P=install(E);
   const target=E.directivesFor(s).at(-1).target;
   const research=P.researchFromProduction(s,target*30);
   assert(Math.abs(research.data-1)<1e-9,'One Research Data should require 30 game-sec of final-target-equivalent production');
+  assert(Math.abs(research.diverted-target*30*P.RESEARCH_DIVERSION_RATE)<1e-9,'Research diversion must match the advertised production share');
 }
 {
   const low=E.createState(E.baseMeta(8));
@@ -36,6 +37,17 @@ const P=install(E);
   P.setResearchFocus(low,true);P.setResearchFocus(high,true);
   E.advance(low,15);E.advance(high,15);
   assert(high.cycle.researchData>low.cycle.researchData*5,'Research progress must scale with diverted production, not elapsed clock time');
+}
+{
+  const meta=E.baseMeta(72);meta.foundryMemory=30;
+  const chunked=E.createState(meta),stepped=E.createState(meta);
+  P.setResearchFocus(chunked,true);P.setResearchFocus(stepped,true);
+  E.advance(chunked,60);
+  for(let i=0;i<1200;i++)E.advance(stepped,0.05);
+  assert.deepStrictEqual(chunked.cycle.levels,stepped.cycle.levels,'Research Focus + Automation must not change upgrades based on advance chunk size');
+  assert(Math.abs(chunked.cycle.credits-stepped.cycle.credits)<1e-7,'Research Focus credits must be invariant to advance chunk size');
+  assert(Math.abs(chunked.cycle.researchData-stepped.cycle.researchData)<1e-9,'Research Focus data must be invariant to advance chunk size');
+  assert.strictEqual(chunked.cycle.rngState,stepped.cycle.rngState,'Research Focus chunking must not perturb deterministic RNG');
 }
 {
   const base=E.createState(E.baseMeta(81));
