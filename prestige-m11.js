@@ -8,6 +8,7 @@
 
   const SCHEMA=1;
   const RESEARCH_MEANINGFUL_THRESHOLD=0.25;
+  const RESEARCH_DIVERSION_RATE=0.18;
   const BREAKTHROUGHS=[
     {id:'capital-I',threshold:12,name:'CAPITAL RECALL I'},
     {id:'automation-I',threshold:30,name:'AUTOMATION SCHEMATICS'},
@@ -124,8 +125,8 @@
   }
   function researchFromProduction(state,produced){
     const target=E.directivesFor(state).slice(-1)[0]?.target||1;
-    const diverted=Math.max(0,Number(produced)||0)*0.18;
-    const unit=Math.max(1e-9,target*30*0.18);
+    const diverted=Math.max(0,Number(produced)||0)*RESEARCH_DIVERSION_RATE;
+    const unit=Math.max(1e-9,target*30*RESEARCH_DIVERSION_RATE);
     return {diverted,data:diverted/unit};
   }
 
@@ -137,16 +138,30 @@
   };
   E.advance=function(state,gameSeconds){
     applyCycleMemory(state);
-    const wasEnded=!!state.cycle.ended,beforeOutput=Number(state.cycle.output)||0;
-    const n=original.advance(state,gameSeconds);
-    const produced=Math.max(0,(Number(state.cycle.output)||0)-beforeOutput);
-    if(state.cycle.researchFocus&&produced>0){
-      const research=researchFromProduction(state,produced);
-      state.cycle.credits=Math.max(0,state.cycle.credits-research.diverted);
-      state.cycle.researchData+=research.data;
+    if(!state?.cycle?.researchFocus)return original.advance(state,gameSeconds);
+
+    const total=(Number(state.cycle.accumulator)||0)+Math.max(0,Number(gameSeconds)||0);
+    const steps=Math.floor(total/E.STEP+1e-9);
+    const remainder=total-steps*E.STEP;
+    state.cycle.accumulator=0;
+    let advanced=0;
+
+    for(let i=0;i<steps&&!state.cycle.ended;i++){
+      const remaining=Math.max(0,E.currentEra(state).duration-state.cycle.time);
+      const actual=Math.min(E.STEP,remaining);
+      if(actual<=1e-12){
+        advanced+=original.advance(state,E.STEP);
+        break;
+      }
+      const expectedProduced=E.throughput(state)*actual;
+      state.cycle.credits-=expectedProduced*RESEARCH_DIVERSION_RATE;
+      const beforeOutput=Number(state.cycle.output)||0;
+      advanced+=original.advance(state,E.STEP);
+      const produced=Math.max(0,(Number(state.cycle.output)||0)-beforeOutput);
+      if(produced>0)state.cycle.researchData+=researchFromProduction(state,produced).data;
     }
-    if(!wasEnded&&state.cycle.ended)awardMemory(state);
-    return n;
+    state.cycle.accumulator=remainder;
+    return advanced;
   };
   E.restart=function(state,advanceEra=false){
     migrateMemory(state.meta);applyBreakthroughFloors(state.meta);
@@ -159,7 +174,7 @@
   };
   E.serialize=function(state){migrateMemory(state.meta);return original.serialize(state)};
 
-  const api={SCHEMA,RESEARCH_MEANINGFUL_THRESHOLD,BREAKTHROUGHS,migrateMemory,unlocked,continuousBonus,applyBreakthroughFloors,memoryEarned,memoryForecast,awardMemory,setResearchFocus,researchFromProduction};
+  const api={SCHEMA,RESEARCH_MEANINGFUL_THRESHOLD,RESEARCH_DIVERSION_RATE,BREAKTHROUGHS,migrateMemory,unlocked,continuousBonus,applyBreakthroughFloors,memoryEarned,memoryForecast,awardMemory,setResearchFocus,researchFromProduction};
   E.__prestigeM11Installed=api;
   return api;
 });
