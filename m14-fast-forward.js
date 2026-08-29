@@ -3,21 +3,10 @@
   const E=window.InfiniteFoundryEngine;
   if(!E)return;
 
-  // M14 outcome: x8 was rejected by same-seed human-like routes. Keep this
-  // compatibility layer only so experimental x8 saves degrade safely to x4.
+  // M14 outcome: x8 was rejected by same-seed human-like routes. Shipping
+  // speeds are x1/x2/x4 only. Engine.deserialize already normalizes any
+  // unsupported/experimental saved speed to x1 before app startup.
   const ALLOWED_SPEEDS=[1,2,4];
-  const originalDeserialize=E.deserialize.bind(E);
-  E.deserialize=function(raw){
-    let requested=1;
-    try{
-      const parsed=typeof raw==='string'?JSON.parse(raw):raw;
-      requested=Number(parsed?.state?.cycle?.speed)||1;
-    }catch(_){}
-    const restored=originalDeserialize(raw);
-    if(!restored)return restored;
-    restored.cycle.speed=requested===8?4:(ALLOWED_SPEEDS.includes(requested)?requested:1);
-    return restored;
-  };
 
   // Defensive cleanup for cached/experimental markup. The shipping markup has
   // only x1/x2/x4, and no runtime path is allowed to re-introduce x8.
