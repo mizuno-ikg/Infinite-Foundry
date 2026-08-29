@@ -138,7 +138,12 @@
   };
   E.advance=function(state,gameSeconds){
     applyCycleMemory(state);
-    if(!state?.cycle?.researchFocus)return original.advance(state,gameSeconds);
+    const wasEnded=!!state?.cycle?.ended;
+    if(!state?.cycle?.researchFocus){
+      const advanced=original.advance(state,gameSeconds);
+      if(!wasEnded&&state?.cycle?.ended)awardMemory(state);
+      return advanced;
+    }
 
     const total=(Number(state.cycle.accumulator)||0)+Math.max(0,Number(gameSeconds)||0);
     const steps=Math.floor(total/E.STEP+1e-9);
@@ -161,6 +166,7 @@
       if(produced>0)state.cycle.researchData+=researchFromProduction(state,produced).data;
     }
     state.cycle.accumulator=remainder;
+    if(!wasEnded&&state.cycle.ended)awardMemory(state);
     return advanced;
   };
   E.restart=function(state,advanceEra=false){
