@@ -11,7 +11,8 @@ const DEFAULTS={
   maxDensityRatio:1.8,
   minDensityRatio:0.45,
   maxCyclePenalty:1.25,
-  maxFinishRateDrop:0.15
+  maxFinishRateDrop:0.15,
+  maxLateReachDrop:0.15
 };
 
 function median(values){
@@ -19,8 +20,9 @@ function median(values){
   if(!v.length)return 0;
   return v[Math.floor((v.length-1)*0.5)];
 }
-
 function ratio(a,b){return b>0?a/b:(a>0?Infinity:1)}
+function reachedAttempts(rows,index){return rows.map(r=>Number(r.attempts?.[index])||0).filter(x=>x>0)}
+function reachedRate(rows,index){return rows.length?rows.filter(r=>(Number(r.attempts?.[index])||0)>0).length/rows.length:0}
 
 function summarizeGroup(rows){
   const s=H.summarize(rows);
@@ -28,7 +30,8 @@ function summarizeGroup(rows){
     ...s,
     x8UseRate:rows.length?rows.filter(r=>(r.speedByCycle||[]).includes(8)).length/rows.length:0,
     x8CyclesP50:median(rows.map(r=>(r.speedByCycle||[]).filter(x=>x===8).length)),
-    lateAttemptsP50:[4,5,6].map(i=>median(rows.map(r=>Number(r.attempts?.[i])||0)))
+    lateAttemptsP50:[4,5,6].map(i=>median(reachedAttempts(rows,i))),
+    lateReachedRate:[4,5,6].map(i=>reachedRate(rows,i))
   };
 }
 
@@ -38,25 +41,29 @@ function evaluatePair(base,eight,opts={}){
   const buyDensityRatio=ratio(eight.buysPerRealMinuteP50,base.buysPerRealMinuteP50);
   const cycleRatio=ratio(eight.cyclesP50,base.cyclesP50);
   const finishRateDrop=base.finishRate-eight.finishRate;
+  const lateReachDrop=median((base.lateReachedRate||[1,1,1]).map((v,i)=>v-(eight.lateReachedRate||[1,1,1])[i]));
   const checks={
     x8ActuallyUsed:eight.x8UseRate>0,
     decisionDensity:densityRatio>=cfg.minDensityRatio&&densityRatio<=cfg.maxDensityRatio,
     buyDensity:buyDensityRatio>=cfg.minDensityRatio&&buyDensityRatio<=cfg.maxDensityRatio,
     cyclePenalty:cycleRatio<=cfg.maxCyclePenalty,
-    finishRate:finishRateDrop<=cfg.maxFinishRateDrop
+    finishRate:finishRateDrop<=cfg.maxFinishRateDrop,
+    lateReach:lateReachDrop<=cfg.maxLateReachDrop
   };
   return {
     pass:Object.values(checks).every(Boolean),
     checks,
-    metrics:{densityRatio,buyDensityRatio,cycleRatio,finishRateDrop,x8UseRate:eight.x8UseRate,x8CyclesP50:eight.x8CyclesP50}
+    metrics:{densityRatio,buyDensityRatio,cycleRatio,finishRateDrop,lateReachDrop,x8UseRate:eight.x8UseRate,x8CyclesP50:eight.x8CyclesP50}
   };
 }
 
 function lateEraFit(summary){
   const [e5,e6,e7]=summary.lateAttemptsP50;
+  const reached=summary.lateReachedRate||[1,1,1];
   return {
-    pass:e5>=1&&e5<=4&&e6>=2&&e6<=6&&e7>=3&&e7<=8,
-    attemptsP50:{era5:e5,era6:e6,era7:e7}
+    pass:reached.every(x=>x>0)&&e5>=1&&e5<=4&&e6>=2&&e6<=6&&e7>=3&&e7<=8,
+    attemptsP50:{era5:e5,era6:e6,era7:e7},
+    reachedRate:{era5:reached[0],era6:reached[1],era7:reached[2]}
   };
 }
 
@@ -69,9 +76,7 @@ function runGate(options={}){
       const bySpeed=new Map();
       for(const speed of cfg.speeds){
         const rows=[];
-        for(let i=1;i<=cfg.seeds;i++){
-          rows.push(H.simulateRoute((seedBase+i)>>>0,{mode,maxCycles:cfg.maxCycles,focusPolicy,speed}));
-        }
+        for(let i=1;i<=cfg.seeds;i++)rows.push(H.simulateRoute((seedBase+i)>>>0,{mode,maxCycles:cfg.maxCycles,focusPolicy,speed}));
         bySpeed.set(speed,summarizeGroup(rows));
       }
       const base=bySpeed.get(4)||bySpeed.get(1);
@@ -91,7 +96,7 @@ function runGate(options={}){
   };
 }
 
-module.exports={DEFAULTS,median,ratio,summarizeGroup,evaluatePair,lateEraFit,runGate};
+module.exports={DEFAULTS,median,ratio,reachedAttempts,reachedRate,summarizeGroup,evaluatePair,lateEraFit,runGate};
 
 if(require.main===module){
   const result=runGate({
