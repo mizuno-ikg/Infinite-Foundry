@@ -6,6 +6,7 @@
     "qa:browser": "node tools/qa/browser-smoke.js",
     "qa:release": "node tools/qa/browser-release.js",
     "stress:progression": "IF_PROGRESSION_SEEDS=80 node tests/progression-balance.test.js",
-    "balance:human": "node tools/balance/human-proxy.js"
+    "balance:human": "node tools/balance/human-proxy.js",
+    "balance:m14": "node tools/balance/m14-speed-report.js"
   }
 }
