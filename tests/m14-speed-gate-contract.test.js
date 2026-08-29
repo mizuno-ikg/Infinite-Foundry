@@ -39,5 +39,8 @@ assert.strictEqual(G.evaluatePair(base,locked).checks.x8ActuallyUsed,false,'gate
 assert.strictEqual(G.lateEraFit({lateAttemptsP50:[2,4,6],lateReachedRate:[1,.9,.8]}).pass,true);
 assert.strictEqual(G.lateEraFit({lateAttemptsP50:[7,9,14],lateReachedRate:[1,.9,.8]}).pass,false,'10+ style late-era repetition must not be accepted');
 assert.strictEqual(G.lateEraFit({lateAttemptsP50:[2,4,0],lateReachedRate:[1,.9,0]}).pass,false,'unreached late eras must not be treated as easy zero-attempt eras');
+assert.strictEqual(G.recommendationFrom(true,true),'KEEP_X8');
+assert.strictEqual(G.recommendationFrom(true,false),'REMOVE_X8','x8 cannot be recommended when neither route proves viable late-era progression');
+assert.strictEqual(G.recommendationFrom(false,true),'REMOVE_X8');
 
 console.log('m14-speed-gate-contract: PASS');
