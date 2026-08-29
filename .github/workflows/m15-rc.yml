@@ -30,3 +30,4 @@ jobs:
           path: qa-browser/
           if-no-files-found: warn
           retention-days: 7
+      # One-shot M15 gate; path filter prevents later develop commits from spending Actions minutes.
