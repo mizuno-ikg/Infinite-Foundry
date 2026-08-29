@@ -1,0 +1,32 @@
+name: M15 Release Candidate QA
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/m15-rc.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  release-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact contract suite
+        run: npm test
+      - name: Browser release QA
+        run: npm run qa:release
+      - name: Upload render evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m15-browser-render-evidence
+          path: qa-browser/
+          if-no-files-found: warn
+          retention-days: 7
