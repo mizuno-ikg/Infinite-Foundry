@@ -18,9 +18,20 @@
       btn.classList.toggle('active',Number(btn.dataset.speed)===speed);
     });
   }
+  function formatDuration(seconds){
+    const total=Math.max(0,Math.round(Number(seconds)||0));
+    const minutes=Math.floor(total/60),secs=total%60;
+    return `${minutes}:${String(secs).padStart(2,'0')}`;
+  }
+  function syncIntroDeadline(){
+    const el=document.getElementById('introDeadline');
+    if(!el||typeof state==='undefined')return;
+    el.textContent=`DEADLINE ${formatDuration(E.currentEra(state).duration)} AT ×1`;
+  }
   document.getElementById('restartBtn')?.addEventListener('click',()=>requestAnimationFrame(sync));
   document.getElementById('advanceEraBtn')?.addEventListener('click',()=>requestAnimationFrame(sync));
   sync();
+  syncIntroDeadline();
 
-  window.InfiniteFoundryM14={ALLOWED_SPEEDS,x8Removed:true,syncSpeedUI:sync};
+  window.InfiniteFoundryM14={ALLOWED_SPEEDS,x8Removed:true,syncSpeedUI:sync,formatDuration,syncIntroDeadline};
 })();
