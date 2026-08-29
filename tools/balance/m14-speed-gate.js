@@ -69,6 +69,8 @@ function lateEraFit(summary){
   };
 }
 
+function recommendationFrom(x8Pass,lateEraPass){return x8Pass&&lateEraPass?'KEEP_X8':'REMOVE_X8'}
+
 function runGate(options={}){
   const cfg={...DEFAULTS,...options};
   const seedBase=Number(options.seedBase)||0x7140000;
@@ -91,14 +93,14 @@ function runGate(options={}){
   const lateEraPass=groups.every(g=>!g.lateEra||g.lateEra.pass);
   return {
     config:{seeds:cfg.seeds,maxCycles:cfg.maxCycles,modes:cfg.modes,focusPolicies:cfg.focusPolicies,speeds:cfg.speeds},
-    recommendation:x8Pass?'KEEP_X8':'REMOVE_X8',
+    recommendation:recommendationFrom(x8Pass,lateEraPass),
     x8Pass,
     lateEraPass,
     groups
   };
 }
 
-module.exports={DEFAULTS,median,ratio,reachedAttempts,reachedRate,summarizeGroup,evaluatePair,lateEraFit,runGate};
+module.exports={DEFAULTS,median,ratio,reachedAttempts,reachedRate,summarizeGroup,evaluatePair,lateEraFit,recommendationFrom,runGate};
 
 if(require.main===module){
   const result=runGate({
@@ -107,5 +109,5 @@ if(require.main===module){
     focusPolicies:(process.env.IF_M14_FOCUS||DEFAULTS.focusPolicies.join(',')).split(',').map(x=>x.trim()).filter(Boolean)
   });
   console.log(JSON.stringify(result,null,2));
-  if(!result.x8Pass)process.exitCode=2;
+  if(result.recommendation!=='KEEP_X8')process.exitCode=2;
 }
