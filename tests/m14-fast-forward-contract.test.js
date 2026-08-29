@@ -40,12 +40,19 @@ assert(restored,'serialized state should restore');
 E.advance(mid,56);E.advance(restored,56);
 assert.deepStrictEqual(snapshot(restored),snapshot(mid),'save/reload must not change future deterministic results');
 
+const experimental=E.createState(E.baseMeta(0x814));
+experimental.cycle.speed=8;
+const normalized=E.deserialize(E.serialize(experimental));
+assert(normalized,'experimental speed save should still load');
+assert.strictEqual(normalized.cycle.speed,1,'unsupported experimental speed must normalize to the safe x1 baseline');
+
 const m14=fs.readFileSync(path.join(__dirname,'..','m14-fast-forward.js'),'utf8');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 assert(m14.includes('ALLOWED_SPEEDS=[1,2,4]'),'shipping speed set must stop at x4');
-assert(m14.includes('requested===8?4'),'experimental x8 saves must degrade safely to x4');
+assert(m14.includes('Engine.deserialize already normalizes')||m14.includes('Engine.deserialize already normalize'),'compatibility layer must document engine-owned invalid-speed normalization');
 assert(m14.includes('x8Removed:true'),'browser compatibility layer must expose the M14 removal decision');
 assert(!m14.includes("eightButton.dataset.speed='8'"),'browser layer must not create an x8 control');
+assert(!m14.includes('requested===8?4'),'browser layer must not override the engine with a second x8 migration rule');
 assert(!html.includes('data-speed="8"'),'shipping markup must not expose x8');
-assert(html.includes('<script src="m14-fast-forward.js"></script>'),'compatibility layer must remain loaded for legacy experimental saves');
+assert(html.includes('<script src="m14-fast-forward.js"></script>'),'shipping cleanup layer must remain loaded');
 console.log('m14-fast-forward-contract: PASS');
